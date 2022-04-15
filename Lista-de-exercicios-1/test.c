@@ -119,6 +119,40 @@ void esvaziaGrafo(VERTICE* g, int V){
     }
 }
 
+VERTICE* grafoTransposto(VERTICE* g, int V){
+    VERTICE* resp = inicializaGrafo(V);
+    for(int i = 0; i < V; i++){
+        NO* p = g[i].inicio->prox;
+        while(p){
+            insereAresta(resp, p->v, i);
+            p = p->prox;
+        }
+    }
+    return resp;
+}
+/*
+int** inicializaMatriz(int V){
+    int m[V][V];
+    for(int i = 0; i < V; i++){
+        for(int j = 0; j < V; j++){
+            m[i][j] = 0;
+        }
+    }
+    return m;
+}
+*/
+VERTICE* converteMatriz(int m[][5] , int V){
+    VERTICE* g = inicializaGrafo(V);
+    for(int i = 0; i < V; i++){
+        for(int j = 0; j < V; j++){
+            if(m[i][j] == 1){
+                insereAresta(g, i, j);
+            }
+        }
+    }
+    return g;
+}
+
 int main()
 {
     VERTICE *g = inicializaGrafo(5);
@@ -146,29 +180,12 @@ int main()
         printf("\n\n");
     }
 
-    excluirLacos(g, 5);
-
-    for (int i = 0; i < 5; i++)
-    {
-        NO *p = g[i].inicio->prox;
-        printf("[%i] ", g[i].inicio->v);
-        while (p)
-        {
-            printf("%i ", p->v);
-            p = p->prox;
-        }
-        printf("\n\n");
-    }
-  printf("Esvaziando grafo...\n\n");
-  esvaziaGrafo(g, 5);
+  VERTICE *gt = grafoTransposto(g, 5);
+  printf("Grafo transposto\n\n");
   for (int i = 0; i < 5; i++)
     {
-        NO *p = g[i].inicio->prox;
-        if(g[i].inicio != NULL)
-          printf("[%i] ", g[i].inicio->v);
-        else{
-          printf("nothing");
-        }
+        NO *p = gt[i].inicio->prox;
+        printf("[%i] ", gt[i].inicio->v);
         while (p)
         {
             printf("%i ", p->v);
@@ -176,5 +193,48 @@ int main()
         }
         printf("\n\n");
     }
-    return 0;
+
+  int m[5][5];
+  m[0][0] = 1;
+  m[0][1] = 0;
+  m[0][2] = 0;
+  m[0][3] = 0;
+  m[0][4] = 1;
+  m[1][0] = 0;
+  m[1][1] = 0;
+  m[1][2] = 0;
+  m[1][3] = 0;
+  m[1][4] = 1;
+  m[2][0] = 1;
+  m[2][1] = 1;
+  m[2][2] = 0;
+  m[2][3] = 0;
+  m[2][4] = 1;
+  m[3][0] = 0;
+  m[3][1] = 0;
+  m[3][2] = 0;
+  m[3][3] = 0;
+  m[3][4] = 1;
+  m[4][0] = 1;
+  m[4][1] = 1;
+  m[4][2] = 1;
+  m[4][3] = 0;
+  m[4][4] = 0;
+
+  VERTICE* gm = converteMatriz(m, 5);
+
+  printf("Convertido de matriz\n\n");
+
+  for (int i = 0; i < 5; i++)
+    {
+        NO *p = gm[i].inicio->prox;
+        printf("[%i] ", gm[i].inicio->v);
+        while (p)
+        {
+            printf("%i ", p->v);
+            p = p->prox;
+        }
+        printf("\n\n");
+    }
+  return 0;
 }

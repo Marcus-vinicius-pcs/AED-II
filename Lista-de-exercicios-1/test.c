@@ -236,5 +236,10 @@ int main()
         }
         printf("\n\n");
     }
+   
+   bool achou = false;
+  existeCaminho(g, 5, 0, 2, &achou);
+  if(achou) printf("Ok\n\n");
+  else printf("NOT FOUND\n\n");
   return 0;
 }

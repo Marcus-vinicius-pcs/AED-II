@@ -10,6 +10,7 @@ typedef struct adj
 {
     int v;
     struct adj *prox;
+    int pond;
 } NO;
 
 typedef struct
@@ -71,6 +72,20 @@ bool insereAresta(VERTICE *g, int i, int j)
     NO *atual = (NO *)malloc(sizeof(NO));
     atual->v = j;
     atual->prox = g[i].inicio->prox;
+    g[i].inicio->prox = atual;
+    return true;
+}
+
+bool insereArestaPonderada(VERTICE *g, int i, int j, int c)
+{ /*
+     NO *ant;
+     NO *atual = buscaAresta(g, i, j, &ant);
+     if (atual)
+         return false;*/
+    NO *atual = (NO *)malloc(sizeof(NO));
+    atual->v = j;
+    atual->prox = g[i].inicio->prox;
+    atual->pond = c;
     g[i].inicio->prox = atual;
     return true;
 }
@@ -255,6 +270,45 @@ for(int i = 0; i<5; i++){
 
   if(arvoreEnraizada(g, 5)) printf("Graças a Deus\n");
   else printf("Here we go again\n");
+
+insereArestaPonderada(g, 0, 1, 8);
+    insereArestaPonderada(g, 1, 0, 8);
+    insereArestaPonderada(g, 0, 2, 2);
+    insereArestaPonderada(g, 2, 0, 2);
+    insereArestaPonderada(g, 1, 2, 3);
+    insereArestaPonderada(g, 2, 1, 3);
+  insereArestaPonderada(g, 1, 3, 4);
+  insereArestaPonderada(g, 3, 1, 4);
+  insereArestaPonderada(g, 2, 3, 5);
+  insereArestaPonderada(g, 3, 2, 5);
+  insereArestaPonderada(g, 2, 4, 6);
+  insereArestaPonderada(g, 4, 2, 6);
+  insereArestaPonderada(g, 3, 4, 7);
+  insereArestaPonderada(g, 4, 3, 7);
+    for (int i = 0; i < 5; i++)
+    {
+        NO *p = g[i].inicio->prox;
+        printf("[%i] ", g[i].inicio->v);
+        while (p)
+        {
+            printf("%i ", p->v);
+            p = p->prox;
+        }
+        printf("\n\n");
+    }
+ 
+VERTICE* g1 = filtraAresta(g, 5, 5);
+  for (int i = 0; i < 5; i++)
+    {
+        NO *p = g1[i].inicio->prox;
+        printf("[%i] ", g1[i].inicio->v);
+        while (p)
+        {
+            printf("%i ", p->v);
+            p = p->prox;
+        }
+        printf("\n\n");
+    }
 
   return 0;
 }

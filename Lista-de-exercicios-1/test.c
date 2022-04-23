@@ -241,5 +241,20 @@ int main()
   existeCaminho(g, 5, 0, 2, &achou);
   if(achou) printf("Ok\n\n");
   else printf("NOT FOUND\n\n");
+
+
+
+for(int i = 0; i<5; i++){
+  NO* p = g[i].inicio->prox;
+  g[i].inicio->flag = 0;
+  while(p){
+    p->flag = 0;
+    p = p->prox;
+  }
+}
+
+  if(arvoreEnraizada(g, 5)) printf("Graças a Deus\n");
+  else printf("Here we go again\n");
+
   return 0;
 }

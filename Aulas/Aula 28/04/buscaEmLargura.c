@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <malloc.h>
+
 //encontrar caminho mais curto
 void buscaLargura(VERTICE* g, int i, int t){
     FILA f;
@@ -7,14 +8,14 @@ void buscaLargura(VERTICE* g, int i, int t){
     zerarFlags(g);
     zerarVia(g);
     g[i].flag = 1;
-    entrarFila(&f, i);
-    while(f.inicio){
-        i = sairFila(&f);
-        p = g[i].inicio;
+    entrarFila(&f, i); 
+    while(f.inicio){ 
+        i = sairFila(&f); 
+        p = g[i].inicio; 
         while(p){
             if(g[p->v].flag == 0){
-                g[p->v].flag = 1;
-                entrarFila(&f, p->v);
+                g[p->v].flag = 1; 
+                entrarFila(&f, p->v); 
                 g[p->v].via = i;
             }
             p = p->prox;

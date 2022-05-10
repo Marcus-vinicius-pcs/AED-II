@@ -8,6 +8,8 @@ typedef int bool;
 typedef struct adj {
     int v;
     int codigo;
+    int flag;
+    int via;
     struct adj* prox;
 } NO;
 
@@ -44,53 +46,32 @@ int sairFila(FILA* f){
     return resp;
 }
 
-void buscaLargura(VERTICE* g, int i, int t){
+int buscaLarguraAdaptada(VERTICE* g, int i, int t){
     FILA f;
-    inicializarFIla(&f);
-    zerarFlags(g);
-    zerarVia(g);
-    g[i].flag = 1;
+    inicializarFila(&f);
+    g[i].inicio->flag = 1;
     entrarFila(&f, i); 
     while(f.inicio){ 
-        i = sairFila(&f); 
+      //imprimirFila(&f);  
+      i = sairFila(&f); 
         NO* p = g[i].inicio; 
         while(p){
-            if(g[p->v].flag == 0){
-                g[p->v].flag = 1; 
-                entrarFila(&f, p->v); 
-                g[p->v].via = i;
-            }
-            p = p->prox;
-        }
-    }
-}
-
-int buscaLargura(VERTICE* g, int i, int t){
-    FILA f;
-    inicializarFIla(&f);
-    zerarFlags(g);
-    zerarVia(g);
-    g[i].flag = 1;
-    entrarFila(&f, i); 
-    while(f.inicio){ 
-        i = sairFila(&f); 
-        NO* p = g[i].inicio; 
-        while(p){
-            if(g[p->v].flag == 0){
+           if(g[p->v].inicio->flag == 0){
                 if(g[p->v].inicio->codigo == t){
                     return p->v;
                     while(f.inicio)
                         sairFila(&f);
                 }
                 else{
-                    g[p->v].flag = 1; 
+                    g[p->v].inicio->flag = 1; 
                     entrarFila(&f, p->v); 
-                    g[p->v].via = i;
+                    g[p->v].inicio->via = i;
                 }
             }
             p = p->prox;
         }
     }
+  return -1;
 }
 
 int postoMaisProximo(VERTICE* g, int local){

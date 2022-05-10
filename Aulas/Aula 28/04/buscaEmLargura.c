@@ -12,7 +12,7 @@ void buscaLargura(VERTICE* g, int i, int t){
     while(f.inicio){ 
         i = sairFila(&f); 
         printf("Visited: %i\n", i);
-        p = g[i].inicio; 
+        NO* p = g[i].inicio; 
         while(p){
             if(g[p->v].flag == 0){
                 g[p->v].flag = 1; 

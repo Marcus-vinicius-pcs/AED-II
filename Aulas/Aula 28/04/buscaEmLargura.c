@@ -11,6 +11,7 @@ void buscaLargura(VERTICE* g, int i, int t){
     entrarFila(&f, i); 
     while(f.inicio){ 
         i = sairFila(&f); 
+        printf("Visited: %i\n", i);
         p = g[i].inicio; 
         while(p){
             if(g[p->v].flag == 0){

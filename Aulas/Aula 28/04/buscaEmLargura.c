@@ -38,8 +38,8 @@ void buscaLargura(VERTICE* g, int i, int t){
         while(p){
             if(g[p->v].flag == 0)
                 g[p->v].flag = 1;
-            entrarFila(&f, p->v);
-            g[p->v].via = i;
+                entrarFila(&f, p->v);
+                g[p->v].via = i;
             if(p->v == t){
                 while(f.inicio)
                     sairFila(&f);
@@ -65,9 +65,9 @@ void buscaLargura(VERTICE* g, int i, int t){
         while(p){
             if(g[p->v].flag == 0)
                 g[p->v].flag = 1;
-            entrarFila(&f, p->v);
-            g[p->v].via = i;
-            g[p->v].dist = 1 + g[i].dist;
+                entrarFila(&f, p->v);
+                g[p->v].via = i;
+                g[p->v].dist = 1 + g[i].dist;
             if(p->v == t){
                 while(f.inicio)
                     sairFila(&f);

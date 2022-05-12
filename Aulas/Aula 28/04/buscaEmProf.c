@@ -59,19 +59,3 @@ void profundidade(VERTICE *g, int V)
             visitaP(g, i);
     }
 }
-
-// Algo do norton em uma só função
-void buscaEmProf(VERTICE *g, int i,int V){
-    for (int i = 0; i < V; i++){
-        if (g[i].inicio->flag == 0){
-            g[i].inicio->flag = 1;
-            NO *p = g[i].inicio->prox;
-            while (p){
-                if (g[p->v].inicio->flag == 0)
-                    buscaEmProf(g, p->v, V);
-                p = p->prox
-            }
-            g[i].inicio->flag = 2;
-        }
-    }
-}

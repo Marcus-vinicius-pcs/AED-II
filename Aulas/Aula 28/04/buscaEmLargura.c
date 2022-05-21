@@ -21,6 +21,27 @@ void buscaLargura(VERTICE* g, int i, int t){
             }
             p = p->prox;
         }
+        g[i].flag = 2;
+    }
+}
+
+//busca em largura para matriz
+void buscaEmLargura(int** m, int V, int* dist, int* flag, int i, int* via){
+    FILA f;
+    inicializarFIla(&f);
+    flags[i] = 1;
+    entrarFila(&, i);
+    while(f.inicio){
+        i = sairFIla(&f);
+        for(int j = 0; j < V; j++){
+            if(m[i][j] == 1 && flag[i] == 0){
+                flag[j] = 1;
+                dist[j] = dist[i] + 1;
+                via[j] = i;
+                entrarFila(&f);
+            }
+        }
+        flag[i] = 2;
     }
 }
 

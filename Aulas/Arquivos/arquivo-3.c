@@ -91,4 +91,6 @@ Ex (3) Ou vice-versa
 Ex (4) Comparar 2 arquivos de tamanho fixo retornando true/false
 Ex (5) Idem, porém considerando um arquivo com registros de tamanho fixo e o outro variável
 Ex (6) O mesmo que o 4 porém considerando que a ordem pode ser diferente
+Ex (7) dados dois arquivos, criar um terceiro que seja a união de seus registros, sem repetição de chaves
 */
+

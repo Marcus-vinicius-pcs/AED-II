@@ -16,7 +16,7 @@ for(i = 0; i < n; i++){
     FILE* arq[i] = fopen(name[i], "rb");
     pickChave[i] = infinito;
     int lidos = fread(&pickChave[i], sizeof(int), tamanhoBuffer, arq[i]);
-    if(lidos < tamanhobuffer
+    if(lidos < tamanhobuffer)
         fclose(arq[i]));
 }
 

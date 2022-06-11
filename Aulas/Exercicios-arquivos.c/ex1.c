@@ -19,10 +19,9 @@ void removeInvalidos(FILE* arq1){
 
     fseek(arq1, 0, SEEK_END);
     while(1 == fread(&resp, sizeof(REGISTRO)), 1, arq1){
+        fseek(arq1, -sizeof(REGISTRO), SEEK_CUR);
         if(resp.valido)
             fwrite(&resp, sizeof(REGISTRO), 1, arq2);
-        fseek(arq1, -sizeof(REGISTRO), SEEK_CUR);
     }
-
     fclose(arq2);
 }

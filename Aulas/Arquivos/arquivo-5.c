@@ -9,14 +9,14 @@ REG tabela[MAX];
 int prox = 0;
 int s = sizeof(REG);
 
-//bool inserir(&tabela, chave, end)
+//bool inserir(&tabela, registro, chave, end)
 //int busca(&tabela, chave)
 //int excluir(&tabela, chave)
 
 REG r;
 FILE* arq = fopen("dados.bin", "rb");
 while(1 == fread(&r, s, 1, arq)){
-    bool ok = inserir(tabela, r, chave, prox);
+    bool ok = inserir(&tabela, r, chave, prox);
     if(!ok) break;
     prox++;
 }

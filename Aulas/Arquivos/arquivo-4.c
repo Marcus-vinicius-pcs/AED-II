@@ -36,8 +36,8 @@ void inverter(FILE* arq1){
     fseek(arq1, 0, SEEK_END);
     while(true){
         fseek(arq1, -sizeof(REG), SEEK_CUR);
-        int lido = fread(&r, sizeof(REG), arq1);
-        if(lido == 1) break;
+        int lido = fread(&r, sizeof(REG), 1, arq1);
+        if(lido != 1) break;
         fwrite(&r, sizeof(REG), saida);
     }
     fclose(saida);
@@ -45,7 +45,7 @@ void inverter(FILE* arq1){
 
 //(4) Excluir todas as ocorrencias de uma dada chave em arquivo com chaves repetidas
 void excluirOcorrencias(FILE* arq, int ch){
-    REG* r;
+    REG r;
     while(1 == fread(&r, sizeof(REG), 1, arq)){
         if(r->nrousp == ch && r->valido == 1){
             r->valido = 0;

@@ -1,6 +1,6 @@
 /*
-Escreva uma função para inserir um novo registro r no arquivo, tomando cuidado para evitar
-chaves duplicadas (verifique quais índices precisam ser atualizados).
+Escreva uma função para excluir o registro de nroUSP X (verifique quais índices precisam ser
+atualizados).
 */
 
 #include <stdio.h>
@@ -35,6 +35,12 @@ int idade;
 bool valido; // para exclusão lógica
 } REGISTRO;
 
+typedef struct adj
+{
+    int chave;
+    struct adj* prox;
+} NO;
+
 /*
 bool inserirÍndice(REGISTRO Tabela[], int nroUSP, int end) //inserção em tabela ordenada, retornando true/false
 int buscarEndereço(REGISTRO Tabela[], int nroUSP) // retorna -1 se end não existe
@@ -42,28 +48,19 @@ int excluirÍndice(REGISTRO Tabela[], int nroUSP) // retorna o endereço exluíd
 */
 
 //NO* chavesCurso(int curso)
-//NO *chavesEstado(int estado)
+//NO* chavesEstado(int estado)
 
-bool inserirRegistro(REGISTRO reg, FILE* arq, INDICE_PRIM tabelaprim[], 
-INDICE_SEC_CURSO tabelacur[], INDICE_SEC_ESTADO tabelaest[])
-{
+void deletarItens(FILE* arq, int nrousp, INDICE_PRIM* tabela){
+    int end = 0;
+    REGISTRO r;
 
-    int prox=  0;
-
-    while (tabelaprim[prox] != NULL)
+    while(end != -1)
     {
-        prox++;
-    }
-    
-    if(!inserirIndice(&tabelaprim, reg.NroUSP, prox++) || 
-       !inserirIndiceSecCurso(&tabelacur, reg.curso, prox++) ||
-       !inserirIndiceSecEstado(&tabelaest, reg.estado, prox++))
-    {
-        return false;
+        end = excluirIndice(&tabela, nrousp);
+        fseek(arq, end*sizeof(REGISTRO), SEEK_SET);
+        fread(&r, sizeof(REGISTRO), 1, arq);
+        r.valido = false;
+        fwrite(&r, sizeof(REGISTRO), 1, arq);
     }
 
-    
-    fwrite(&reg, prox*sizeof(REGISTRO), 1, arq);
-
-    return true;
 }

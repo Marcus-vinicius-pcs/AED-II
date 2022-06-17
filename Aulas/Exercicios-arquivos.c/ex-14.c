@@ -1,6 +1,5 @@
 /*
-Escreva uma função para inserir um novo registro r no arquivo, tomando cuidado para evitar
-chaves duplicadas (verifique quais índices precisam ser atualizados).
+Escreva uma função para exibir todos os registros do curso X.
 */
 
 #include <stdio.h>
@@ -35,6 +34,12 @@ int idade;
 bool valido; // para exclusão lógica
 } REGISTRO;
 
+typedef struct adj
+{
+    int chave;
+    struct adj* prox;
+} NO;
+
 /*
 bool inserirÍndice(REGISTRO Tabela[], int nroUSP, int end) //inserção em tabela ordenada, retornando true/false
 int buscarEndereço(REGISTRO Tabela[], int nroUSP) // retorna -1 se end não existe
@@ -42,28 +47,20 @@ int excluirÍndice(REGISTRO Tabela[], int nroUSP) // retorna o endereço exluíd
 */
 
 //NO* chavesCurso(int curso)
-//NO *chavesEstado(int estado)
+//NO* chavesEstado(int estado)
 
-bool inserirRegistro(REGISTRO reg, FILE* arq, INDICE_PRIM tabelaprim[], 
-INDICE_SEC_CURSO tabelacur[], INDICE_SEC_ESTADO tabelaest[])
-{
-
-    int prox=  0;
-
-    while (tabelaprim[prox] != NULL)
-    {
-        prox++;
+void printarLista(FILE* arq, int curso){
+    REGISTRO r;
+    NO* lista = chavesCurso(curso);
+   
+    fseek(arq, 0, SEEK_SET);
+    while(lista)
+    {   
+        while(fread(&r, sizeof(REGISTRO), 1, arq))
+        {
+            if(lista->chave == r.NroUSP)
+                printf("Chave: %i\n", r.NroUSP);
+        }
+        
     }
-    
-    if(!inserirIndice(&tabelaprim, reg.NroUSP, prox++) || 
-       !inserirIndiceSecCurso(&tabelacur, reg.curso, prox++) ||
-       !inserirIndiceSecEstado(&tabelaest, reg.estado, prox++))
-    {
-        return false;
-    }
-
-    
-    fwrite(&reg, prox*sizeof(REGISTRO), 1, arq);
-
-    return true;
 }

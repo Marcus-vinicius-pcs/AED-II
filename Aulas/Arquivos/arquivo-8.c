@@ -62,7 +62,7 @@ fwrite(&V, t, 1, arq){
 
 VERTICE* g;
 int V;
-fread(&, V, t, 1, arq);
+fread(&V, t, 1, arq);
 g = (VERTICE*)malloc(sizeof(int) * V);
 inicializa(g);
 int origem, dest, peso;

@@ -74,7 +74,7 @@ void ordenaTabela(REG_AUX* tabela[]){
 void keySort(FILE* arq1){
     FILE* arq2 = fopen("Arquivo_ordenado.bin", "wb");
     REG_AUX r;
-    REG_AUX tabela;
+    REG_AUX* tabela;
     preencherTabela(&tabela);
     ordenarTabela(&tabela);
 

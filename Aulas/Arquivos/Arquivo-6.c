@@ -21,10 +21,12 @@ for(i = 0; i < n; i++){
 }
 
 //intercalação
+REGISTRO r;
 int arqAlvo = -1;
 int menorChave = -1;
 while(true){
     for(int i = 0; i < n; i++){
+        //pickChave[i] = fread(&r, sizeof(REGISTRO), 1, arq[i]);
         if(pickChave[i] < menorChave){
             arqAlvo = i;
             menorChave = pickChave[i];

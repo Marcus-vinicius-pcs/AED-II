@@ -22,7 +22,7 @@ for(i = 0; i < n; i++){
 
 //intercalação
 int arqAlvo = -1;
-int menosChave = -1;
+int menorChave = -1;
 while(true){
     for(int i = 0; i < n; i++){
         if(pickChave[i] < menorChave){
@@ -34,7 +34,7 @@ while(true){
         }
     }
 
-    fwrite(&menosChave, sizeof(int), 1, saida);
+    fwrite(&menorChave, sizeof(int), 1, saida);
     pickChave[i] = infinito;
     lidos = fread(&pickchave[i], sizeof(int), 1, arq[i]);
     if(lidos < tamanhobuffer)

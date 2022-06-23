@@ -17,7 +17,7 @@ for(i = 0; i < n; i++){
     pickChave[i] = infinito;
     int lidos = fread(&pickChave[i], sizeof(int), tamanhoBuffer, arq[i]);
     if(lidos < tamanhobuffer)
-        fclose(arq[i]));
+        fclose(arq[i]);
 }
 
 //intercalação

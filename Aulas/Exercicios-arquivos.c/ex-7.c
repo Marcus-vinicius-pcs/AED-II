@@ -37,7 +37,7 @@ REG_AUX* preencherTabela(){
 
     while(1 == fread(&r, sizeof(REG_AUX), 1, arq)){
 
-        if(!inserir(&tabela, r->chave, prox);) 
+        if(!inserir(&tabela, r->chave, prox)) 
             break;
         prox++;
     }
@@ -78,14 +78,15 @@ void keySort(FILE* arq1){
     preencherTabela(&tabela);
     ordenarTabela(&tabela);
 
-    while(1 == fread(&r, sizeof(REG_AUX), 1, arq1)){
-        int end = busca(tabela, r->chave);
-        
-        fseek(arq, end*sizeof(REG_AUX), SEEK_SET);
-        fread(&r, sizeof(REG_AUX), 1, arq1);
-        fwrite(&r, sizeof(REG_AUX), 1, arq2);
+    fseek(arq2, 0, SEEK_SET);
+    for(int i = 0; i < MAX; i++)
+    {
+        fread(&r, tabela[i].end*sizeof(REGISTRO), 1, arq1);
+        fwrite(&r, sizeof(REGISTRO), 1, arq2);
+        fseek(arq2, sizeof(REGISTRO), SEEK_CUR);
     }
 
     fclose(arq2);
 }
 
+//refazer

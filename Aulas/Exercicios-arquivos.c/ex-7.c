@@ -83,7 +83,6 @@ void keySort(FILE* arq1){
     {
         fread(&r, tabela[i].end*sizeof(REGISTRO), 1, arq1);
         fwrite(&r, sizeof(REGISTRO), 1, arq2);
-        fseek(arq2, sizeof(REGISTRO), SEEK_CUR);
     }
 
     fclose(arq2);

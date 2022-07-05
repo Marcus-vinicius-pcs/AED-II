@@ -48,6 +48,27 @@ void excluir(char nomearq[], int *raiz, int ch);
 // necessitar
 //------------------------------------------
 
+bool excluirChave(int ch, FILE* arq)
+{
+  int pos = -1;
+  PAGINA* p = carregarPaginaChave(arq, ch);
+  if (p == NULL)
+    return false;
+  for(int i = 1; i <= p->cont; i++)
+  {
+    if(p->item[i].chave == ch)
+      pos = i;
+  }
+
+  if(pos == -1)
+    return false;
+
+  p->item[pos].chave = p->item[pos+1].chave;
+  p->item[pos].linkdir = p->item[pos+1].linkdir;
+  p->cont--;
+  return true;
+}
+
 void excluir(char nomearq[], int *raiz, int ch)
 {
 
@@ -56,6 +77,7 @@ void excluir(char nomearq[], int *raiz, int ch)
   // atualize o nro da *raiz se necessario
   // feche o arquivo
 }
+
 
 PAGINA *carregarPagina(FILE *arq, int nroPag)
 {
@@ -82,6 +104,31 @@ PAGINA *carregarPaginaChave(FILE *arq, int chave)
     }
   }
   return NULL;
+}
+
+int encontrarSucessor(int ch, FILE* arq)
+{
+  int pos = -1;
+  PAGINA* p = carregarPaginaChave(arq, ch);
+  PAGINA* aux;
+  int j;
+
+  if(p == NULL)
+    return -1;
+  for(int i = 1; i <= p->cont; i++)
+  {
+    if(p->item[i].chave == ch)
+      pos = i;
+  }
+  if(pos == -1)
+    return -1;
+
+  aux = carregarPagina(arq, p->item[pos].linkdir);
+  while(aux->item[0].linkdir > -1)
+  {
+    aux = carregarPagina(arq, aux->item[0].linkdir);
+  }
+  return aux->item[1].chave;
 }
 
 int main()
@@ -270,11 +317,18 @@ int main()
   }
 
   printf("\n\nNOVO TESTEEE\n\n");
-  for (int i = 0; i < 9; i++)
+  for (int i = 0; i < 27; i++)
   {
     PAGINA *teste1 = carregarPaginaChave(arq, i);
     if (teste1 != NULL)
       printf("%i página: %i\n", i, teste1->np);
   }
+
+  printf("\n\nteste de encontrar o sucessor\n\n");
+  printf("%i", encontrarSucessor(21, arq));
+
+  
   fclose(arq);
+
+  
 }

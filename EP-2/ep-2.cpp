@@ -69,8 +69,30 @@ bool excluirChave(int ch, FILE* arq)
   return true;
 }
 
+void excluiChave(FILE* arq, int ch);
+
 void excluir(char nomearq[], int *raiz, int ch)
 {
+  if(*raiz == -1)
+    return;
+  
+  PAGINA* p;
+  PAGINA* pai;
+  PAGINA* irma;
+  int* indexOrigem;
+  FILE* arq = fopen(nomearq, "wb+");
+  p = carregarPaginaChave(arq, ch, &pai, &indexOrigem, *raiz); //carrega uma pagina e armazenna o pai dela buscando pela chave
+
+  //Tratando o caso 1 (exclusão sem underflow)
+  if(p->cont == 2)
+    excluiChave(arq, ch);
+
+  //Tratando o caso 2 (exclusão na raiz)
+  if(p->np == *raiz)
+    sobeSucessor(ch, arq);
+  
+  //tratando o caso 3 (exclusão com redistribuição possível)
+  if(pai->item[*indexOrigem+1].linkdir)
 
   // abra o arquivo
   // faca a exclusao
@@ -91,22 +113,28 @@ PAGINA *carregarPagina(FILE *arq, int nroPag)
   return NULL;
 }
 
-PAGINA *carregarPaginaChave(FILE *arq, int chave)
+PAGINA *carregarPaginaChave(FILE *arq, int chave, PAGINA** pai, int** indexOrigem, int raiz)
 {
   PAGINA *p;
-  rewind(arq);
-  while (1 == fread(p, sizeof(PAGINA), 1, arq))
+  PAGINA* raiz;
+  
+  raiz = carregaPagina(arq, raiz);
+  p = raiz;
+  for(int i = p->cont; i >= 1; i--)
   {
-    for (int i = 0; i <= p->cont; i++)
-    {
-      if (p->item[i].chave == chave)
-        return p;
-    }
+    if(p->item[i].chave == chave)
+      return p;
+
+    else if (p->item[i].chave < chave)
+      *pai = p;
+      *indexOrigem = i;
+      p = carregarPagina(arq, p->item[i].linkdir);
   }
+
   return NULL;
 }
 
-int encontrarSucessor(int ch, FILE* arq)
+int sobeSucessor(int ch, FILE* arq)
 {
   int pos = -1;
   PAGINA* p = carregarPaginaChave(arq, ch);

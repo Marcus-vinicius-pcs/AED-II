@@ -119,7 +119,11 @@ void excluir(char nomearq[], int *raiz, int ch)
   {
       excluiChave(arq, ch);
       redistribuicaoEsquerda();
-  }
+  } else //CASO 4 (Concatenação)
+    concatenacao();
+
+  
+
 
 
   //

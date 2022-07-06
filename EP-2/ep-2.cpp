@@ -83,17 +83,46 @@ void excluir(char nomearq[], int *raiz, int ch)
   FILE* arq = fopen(nomearq, "wb+");
   p = carregarPaginaChave(arq, ch, &pai, &indexOrigem, *raiz); //carrega uma pagina e armazenna o pai dela buscando pela chave
 
-  //Tratando o caso 1 (exclusão sem underflow)
+  //CASO 1 (exclusão sem underflow)
   if(p->cont == 2)
     excluiChave(arq, ch);
 
-  //Tratando o caso 2 (exclusão na raiz)
+  //CASO 2 (exclusão na raiz)
   if(p->np == *raiz)
     sobeSucessor(ch, arq);
   
-  //tratando o caso 3 (exclusão com redistribuição possível)
-  if(pai->item[*indexOrigem+1].linkdir)
+  //CASO 3 (exclusão com redistribuição possível)
+  //em todos os if verifico se página irmã com a qual vamos 
+  //realizar a redistribuição, possui chaves suficientes
+  //para realizar tal operação. Caso contrário, entramos no 
+  //caso 4.
+  if (*indexOrigem == 0 
+  && carregarPagina(arq, pai->item[1].linkdir)->cont > 1) // se a pagina com o item de exclusão for a mais à esquerda
+  {
+    excluiChave(arq, ch);
+    redistribuicaoDireita();
+  } 
+  else if (indexOrigem == 1) // se a pagina com o item de exclusao for a do centro
+  {
+    if (carregarPagina(arq, pai->item[0].linkdir)->cont > 1)
+    {
+      excluiChave(arq, ch);
+      redistribuicaoEsquerda();
+    }
+    else if(carregarPagina(arq, pai->item[2].linkdir)->cont > 1)
+    {
+      excluiChave(arq, ch);
+      redistribuicaoDireita();
+    }
+  } 
+  else if(carregarPagina(arq, pai->item[1].linkdir)->cont > 1)// se pagina com o item de exclusao for a mais à direita
+  {
+      excluiChave(arq, ch);
+      redistribuicaoEsquerda();
+  }
 
+
+  //
   // abra o arquivo
   // faca a exclusao
   // atualize o nro da *raiz se necessario

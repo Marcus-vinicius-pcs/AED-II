@@ -48,7 +48,7 @@ void excluir(char nomearq[], int *raiz, int ch);
 // necessitar
 //------------------------------------------
 
-bool excluirChave(int ch, FILE* arq)
+bool removeChave(FILE* arq, int ch)
 {
   int pos = -1;
   PAGINA* p = carregarPaginaChave(arq, ch);
@@ -69,26 +69,6 @@ bool excluirChave(int ch, FILE* arq)
   return true;
 }
 
-
-//Função baseada no icmc
-void removeArvore(char nomearq[], int *raiz, int ch)
-{
-  FILE* arq = fopen(nomearq, "wb+");
-  int pos;
-  PAGINA* p = carregarPaginaChave(arq, ch, &pos)
-  if (raiz == NULL)
-  {
-    return;
-  }
-// se encontrou a chave que está na raiz
-  if (p->np == *raiz)
-  {
-    sobeSucessor(p->item[pos], arq);
-    //chama recursivamente para remover o sucessor na folha de onde foi tirado
-    removeArvore(nomearq, )
-  }
-}
-
 PAGINA *carregarPagina(FILE *arq, int nroPag)
 {
   PAGINA *r;
@@ -102,17 +82,17 @@ PAGINA *carregarPagina(FILE *arq, int nroPag)
   return NULL;
 }
 
-PAGINA *carregarPaginaChave(FILE *arq, int chave int* pos, int raiz)
+PAGINA *carregarPaginaChave(FILE *arq, int chave, int* pos, int raiz)
 {
-  PAGINA *p;
-  p = carregaPagina(arq, raiz);
+  PAGINA *p = carregaPagina(arq, raiz);
 
   for(int i = p->cont; i >= 1; i--)
   {
-    if(p->item[i].chave == chave)
+    if (p->item[i].chave == chave)
+    {
       *pos = i;
       return p;
-
+    }
     else if (p->item[i].chave < chave)
       p = carregarPagina(arq, p->item[i].linkdir);
   }
@@ -120,29 +100,97 @@ PAGINA *carregarPaginaChave(FILE *arq, int chave int* pos, int raiz)
   return NULL;
 }
 
-int sobeSucessor(int ch, FILE* arq)
+void sobeSucessor(int ch, FILE* arq, int raiz)
 {
   int pos = -1;
-  PAGINA* p = carregarPaginaChave(arq, ch);
+  PAGINA* p = carregarPaginaChave(arq, ch, &pos, raiz);
   PAGINA* aux;
-  int j;
 
   if(p == NULL)
-    return -1;
-  for(int i = 1; i <= p->cont; i++)
-  {
-    if(p->item[i].chave == ch)
-      pos = i;
-  }
+    return;
+  
   if(pos == -1)
-    return -1;
+    return;
 
   aux = carregarPagina(arq, p->item[pos].linkdir);
   while(aux->item[0].linkdir > -1)
   {
     aux = carregarPagina(arq, aux->item[0].linkdir);
   }
-  return aux->item[1].chave;
+  
+  p->item[pos] = aux->item[1];
+  fseek(arq, p->np*sizeof(PAGINA), SEEK_SET); //verificar com prof se é possível acessar o arquivo dessa maneira
+  fwrite(&p, sizeof(PAGINA), 1, arq);
+  
+}
+
+//Função que restaura a árvore aplicando as regras de underflow, realizando as distribuições necessárias e/ou concatenações.
+
+void restauraArvore(FILE* arq, int* raiz, int pos, PAGINA* p)
+{
+  //Caso em que a página com underflow é a mais à esquerda
+  if (pos == 0)
+  {
+    if(carregarPagina(arq, p->item[1].linkdir)->cont > 1)
+      moveParaEsquerda(raiz, 1); //move o irmão 1 para o irmão 0
+    else combinaIrmaos(raiz, 1); // concatenação com a raiz
+  } else {
+    //verifica se é o mais a direita
+    if (pos == 2)  
+    {
+      if(carregarPagina(arq, p->item[1].linkdir)->cont > 1)
+        moveParaDireita(raiz, pos); //move do irmao pos-1 para pos
+      else combinaIrmaos(raiz, pos); //concatenação
+    } else 
+      {
+        //caso em que a pagina está no meio
+        if(carregarPagina(arq, p->item[0].linkdir)->cont > 1)
+          moveParaDireita(raiz, pos);
+        else if (carregarPagina(arq, p->item[2].linkdir)->cont > 1)
+                moveParaEsquerda(raiz, 2);
+             else //nenhum dos dois irmaos pode emprestar
+                combinaIrmaos(raiz, pos); // concatenação
+      }
+  }
+    
+}
+
+//Função baseada no icmc
+void excluir(char nomearq[], int *raiz, int ch)
+{
+  FILE* arq = fopen(nomearq, "wb+");
+  int pos;
+  PAGINA* p = carregarPaginaChave(arq, ch, &pos);
+  if (raiz == NULL)
+  {
+    return;
+  }
+// se encontrou a chave que está na raiz
+  if (p->np == *raiz)
+  {
+    sobeSucessor(p->item[pos].chave, arq, *raiz);
+    //chama recursivamente para remover o sucessor na folha de onde foi tirado
+    excluir(nomearq, p, p->item[pos].chave);
+  }
+    else //Chave está na folha, então simplesmente remove a chave
+      if(!removeChave(arq, p->item[pos].chave))
+        return;
+
+  //Verificações da regra de underflow
+  //Na volta da recursão vamos corrigindo os "problemas" deixados para trás
+
+  if (p != NULL)
+  {
+    if (p->cont < 1)
+    {
+      PAGINA* pai = carregarPagina(arq, p->np - 1);
+      restauraArvore(arq, raiz, pos, pai);
+    }
+    PAGINA* aux = carregarPagina(arq, *raiz);
+    if(aux->cont == 0)
+      *raiz = aux->item[0].linkdir;
+  }
+
 }
 
 int main()

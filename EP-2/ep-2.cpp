@@ -69,70 +69,25 @@ bool excluirChave(int ch, FILE* arq)
   return true;
 }
 
-void excluiChave(FILE* arq, int ch);
 
-void excluir(char nomearq[], int *raiz, int ch)
+//Função baseada no icmc
+void removeArvore(char nomearq[], int *raiz, int ch)
 {
-  if(*raiz == -1)
-    return;
-  
-  PAGINA* p;
-  PAGINA* pai;
-  PAGINA* irma;
-  int* indexOrigem;
   FILE* arq = fopen(nomearq, "wb+");
-  p = carregarPaginaChave(arq, ch, &pai, &indexOrigem, *raiz); //carrega uma pagina e armazenna o pai dela buscando pela chave
-
-  //CASO 1 (exclusão sem underflow)
-  if(p->cont == 2)
-    excluiChave(arq, ch);
-
-  //CASO 2 (exclusão na raiz)
-  if(p->np == *raiz)
-    sobeSucessor(ch, arq);
-  
-  //CASO 3 (exclusão com redistribuição possível)
-  //em todos os if verifico se página irmã com a qual vamos 
-  //realizar a redistribuição, possui chaves suficientes
-  //para realizar tal operação. Caso contrário, entramos no 
-  //caso 4.
-  if (*indexOrigem == 0 
-  && carregarPagina(arq, pai->item[1].linkdir)->cont > 1) // se a pagina com o item de exclusão for a mais à esquerda
+  int pos;
+  PAGINA* p = carregarPaginaChave(arq, ch, &pos)
+  if (raiz == NULL)
   {
-    excluiChave(arq, ch);
-    redistribuicaoDireita();
-  } 
-  else if (indexOrigem == 1) // se a pagina com o item de exclusao for a do centro
+    return;
+  }
+// se encontrou a chave que está na raiz
+  if (p->np == *raiz)
   {
-    if (carregarPagina(arq, pai->item[0].linkdir)->cont > 1)
-    {
-      excluiChave(arq, ch);
-      redistribuicaoEsquerda();
-    }
-    else if(carregarPagina(arq, pai->item[2].linkdir)->cont > 1)
-    {
-      excluiChave(arq, ch);
-      redistribuicaoDireita();
-    }
-  } 
-  else if(carregarPagina(arq, pai->item[1].linkdir)->cont > 1)// se pagina com o item de exclusao for a mais à direita
-  {
-      excluiChave(arq, ch);
-      redistribuicaoEsquerda();
-  } else //CASO 4 (Concatenação)
-    concatenacao();
-
-  
-
-
-
-  //
-  // abra o arquivo
-  // faca a exclusao
-  // atualize o nro da *raiz se necessario
-  // feche o arquivo
+    sobeSucessor(p->item[pos], arq);
+    //chama recursivamente para remover o sucessor na folha de onde foi tirado
+    removeArvore(nomearq, )
+  }
 }
-
 
 PAGINA *carregarPagina(FILE *arq, int nroPag)
 {
@@ -143,24 +98,22 @@ PAGINA *carregarPagina(FILE *arq, int nroPag)
     if (r->np == nroPag)
       return r;
   }
+
   return NULL;
 }
 
-PAGINA *carregarPaginaChave(FILE *arq, int chave, PAGINA** pai, int** indexOrigem, int raiz)
+PAGINA *carregarPaginaChave(FILE *arq, int chave int* pos, int raiz)
 {
   PAGINA *p;
-  PAGINA* raiz;
-  
-  raiz = carregaPagina(arq, raiz);
-  p = raiz;
+  p = carregaPagina(arq, raiz);
+
   for(int i = p->cont; i >= 1; i--)
   {
     if(p->item[i].chave == chave)
+      *pos = i;
       return p;
 
     else if (p->item[i].chave < chave)
-      *pai = p;
-      *indexOrigem = i;
       p = carregarPagina(arq, p->item[i].linkdir);
   }
 

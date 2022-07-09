@@ -48,51 +48,60 @@ void excluir(char nomearq[], int *raiz, int ch);
 // necessitar
 //------------------------------------------
 
-bool removeChave(FILE* arq, int ch)
+bool removeChave(FILE* arq, int ch, int raiz)
 {
   int pos = -1;
-  PAGINA* p = carregarPaginaChave(arq, ch);
-  if (p == NULL)
+  PAGINA* p = carregarPaginaChave(arq, ch, &pos, raiz);
+
+  if (p == NULL || pos == -1)
     return false;
-  for(int i = 1; i <= p->cont; i++)
-  {
-    if(p->item[i].chave == ch)
-      pos = i;
+
+
+  if(pos == 2){
+    p->cont--;
+    return true;  
   }
-
-  if(pos == -1)
-    return false;
-
-  p->item[pos].chave = p->item[pos+1].chave;
-  p->item[pos].linkdir = p->item[pos+1].linkdir;
-  p->cont--;
-  return true;
+  else{
+      p->item[pos].chave = p->item[pos+1].chave;
+      p->item[pos].linkdir = p->item[pos+1].linkdir;
+      p->cont--;
+      return true;
+  }
 }
 
-PAGINA *carregarPagina(FILE *arq, int nroPag)
+PAGINA* carregarPagina(FILE *arq, int nroPag)
 {
   PAGINA *r;
   rewind(arq);
   fseek(arq, nroPag*sizeof(PAGINA), SEEK_SET);
+
   if(1 == fread(&r, sizeof(PAGINA), 1, arq))
     return r;
   else 
     return NULL;
 }
 
-PAGINA *carregarPaginaChave(FILE *arq, int chave, int* pos, int raiz)
-{
-  PAGINA *p = carregaPagina(arq, raiz);
 
-  for(int i = p->cont; i >= 1; i--)
+PAGINA* carregarPaginaChave(FILE *arq, int chave, int* pos, int raiz)
+{
+  PAGINA* p = carregarPagina(arq, raiz);
+
+  int i = p->cont;
+  while(i >= 0 && p != NULL)
   {
     if (p->item[i].chave == chave)
     {
       *pos = i;
       return p;
     }
-    else if (p->item[i].chave < chave)
+    else if (chave > p->item[i].chave)
+    {
       p = carregarPagina(arq, p->item[i].linkdir);
+      i = p->cont;
+    } 
+    else{
+      i--;
+    }
   }
 
   return NULL;
@@ -104,10 +113,7 @@ void sobeSucessor(int ch, FILE* arq, int raiz)
   PAGINA* p = carregarPaginaChave(arq, ch, &pos, raiz);
   PAGINA* aux;
 
-  if(p == NULL)
-    return;
-  
-  if(pos == -1)
+  if(p == NULL || pos == -1)
     return;
 
   aux = carregarPagina(arq, p->item[pos].linkdir);
@@ -116,7 +122,7 @@ void sobeSucessor(int ch, FILE* arq, int raiz)
     aux = carregarPagina(arq, aux->item[0].linkdir);
   }
   
-  p->item[pos] = aux->item[1];
+  p->item[pos].chave = aux->item[1].chave;
   fseek(arq, p->np*sizeof(PAGINA), SEEK_SET); 
   fwrite(&p, sizeof(PAGINA), 1, arq);
 }
@@ -152,36 +158,46 @@ void restauraArvore(FILE* arq, int* raiz, int pos, PAGINA* p)
     
 }
 
+
+
 //Função baseada no icmc
-void excluir(char nomearq[], int *raiz, int ch)
+void excluir(char nomearq[], int* raiz, int ch)
 {
+  if (raiz == NULL || *raiz == -1) return;
+
   FILE* arq = fopen(nomearq, "wb+");
-  int pos;
-  PAGINA* p = carregarPaginaChave(arq, ch, &pos);
-  if (raiz == NULL)
-  {
-    return;
-  }
-// se encontrou a chave que está na raiz
+  int posicaoChavePagina;
+  PAGINA* p = carregarPaginaChave(arq, ch, &posicaoChavePagina, *raiz);
+
+  //se encontrou a chave na página raiz
   if (p->np == *raiz)
   {
-    sobeSucessor(p->item[pos].chave, arq, *raiz);
-    //chama recursivamente para remover o sucessor na folha de onde foi tirado
-    excluir(nomearq, p, p->item[pos].chave);
+    // se for folha
+    if(p->item[0].linkdir == -1 && p->item[1].linkdir == -1 && p->item[2].linkdir == -1)
+    {
+      if(!removeChave(arq, p->item[posicaoChavePagina].chave, *raiz)) return;
+    }
+    else
+    {
+      sobeSucessor(p->item[posicaoChavePagina].chave, arq, *raiz);
+      //chama recursivamente para remover o sucessor na folha de onde foi tirado
+      fseek(arq, p->np*sizeof(PAGINA), SEEK_SET); 
+      fread(&p,sizeof(PAGINA),1,arq);
+      excluir(nomearq, &p->np, p->item[posicaoChavePagina].chave);
+    }
   }
-    else //Chave está na folha, então simplesmente remove a chave
-      if(!removeChave(arq, p->item[pos].chave))
-        return;
+  else { 
+    excluir(nomearq, &p->np, p->item[posicaoChavePagina].chave);
+  }      
 
   //Verificações da regra de underflow
   //Na volta da recursão vamos corrigindo os "problemas" deixados para trás
-
   if (p != NULL)
   {
     if (p->cont < 1)
     {
       PAGINA* pai = carregarPagina(arq, p->np - 1);
-      restauraArvore(arq, raiz, pos, pai);
+      restauraArvore(arq, raiz, posicaoChavePagina, pai);
     }
     PAGINA* aux = carregarPagina(arq, *raiz);
     if(aux->cont == 0)

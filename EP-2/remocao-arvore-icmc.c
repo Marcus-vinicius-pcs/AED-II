@@ -59,6 +59,7 @@ int buscaChave(chave ch, No *no, int *pos){
 	}
 
 	// percorre o vetor inteiro e veja se encontra
+	//for (*pos = 2; ch < no->chaves[*pos] && *pos > 1; (*pos)--);
 	for (*pos = no->cont; ch < no->chaves[*pos] && *pos > 1; (*pos)--);
 	
 	return (ch == no->chaves[*pos]);

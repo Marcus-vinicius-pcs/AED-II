@@ -107,22 +107,25 @@ PAGINA* carregarPaginaChave(FILE *arq, int chave, int* pos, int raiz)
   return NULL;
 }
 
-void sobeSucessor(int ch, FILE* arq, int raiz)
+void sobeSucessor(int ch, FILE* arq, int raiz, int* chaveSucessor)
 {
   int pos = -1;
   PAGINA* p = carregarPaginaChave(arq, ch, &pos, raiz);
-  PAGINA* aux;
+  PAGINA* filha;
 
   if(p == NULL || pos == -1)
     return;
 
-  aux = carregarPagina(arq, p->item[pos].linkdir);
-  while(aux->item[0].linkdir > -1)
+  filha = carregarPagina(arq, p->item[pos].linkdir);
+  while(filha->item[0].linkdir > -1)
   {
-    aux = carregarPagina(arq, aux->item[0].linkdir);
+    filha = carregarPagina(arq, filha->item[0].linkdir);
   }
   
-  p->item[pos].chave = aux->item[1].chave;
+
+  *chaveSucessor = filha->item[1].chave;
+
+  p->item[pos].chave = filha->item[1].chave;
   fseek(arq, p->np*sizeof(PAGINA), SEEK_SET); 
   fwrite(&p, sizeof(PAGINA), 1, arq);
 }
@@ -158,6 +161,20 @@ void restauraArvore(FILE* arq, int* raiz, int pos, PAGINA* p)
     
 }
 
+bool buscarChaveNaPagina(PAGINA pagina, int chave, int* posicao)
+{
+  if(chave < pagina.item[1].chave){
+    *posicao = 0;
+    return false;
+  }
+
+  for (*posicao = pagina.cont; chave < pagina.item[*posicao].chave && *posicao > 1; (*posicao)--);
+
+  return (chave == pagina.item[*posicao].chave);
+
+}
+
+
 
 
 //Função baseada no icmc
@@ -167,10 +184,11 @@ void excluir(char nomearq[], int* raiz, int ch)
 
   FILE* arq = fopen(nomearq, "wb+");
   int posicaoChavePagina;
-  PAGINA* p = carregarPaginaChave(arq, ch, &posicaoChavePagina, *raiz);
+  PAGINA* p = carregarPagina(arq,*raiz);
 
   //se encontrou a chave na página raiz
-  if (p->np == *raiz)
+
+  if (buscarChaveNaPagina(*p,ch,&posicaoChavePagina))
   {
     // se for folha
     if(p->item[0].linkdir == -1 && p->item[1].linkdir == -1 && p->item[2].linkdir == -1)
@@ -179,11 +197,9 @@ void excluir(char nomearq[], int* raiz, int ch)
     }
     else
     {
-      sobeSucessor(p->item[posicaoChavePagina].chave, arq, *raiz);
-      //chama recursivamente para remover o sucessor na folha de onde foi tirado
-      fseek(arq, p->np*sizeof(PAGINA), SEEK_SET); 
-      fread(&p,sizeof(PAGINA),1,arq);
-      excluir(nomearq, &p->np, p->item[posicaoChavePagina].chave);
+      int chaveSucessor = -1;
+      sobeSucessor(p->item[posicaoChavePagina].chave, arq, *raiz, &chaveSucessor);
+      excluir(nomearq, &p->item[posicaoChavePagina].linkdir, chaveSucessor);
     }
   }
   else { 
@@ -196,12 +212,12 @@ void excluir(char nomearq[], int* raiz, int ch)
   {
     if (p->cont < 1)
     {
-      PAGINA* pai = carregarPagina(arq, p->np - 1);
-      restauraArvore(arq, raiz, posicaoChavePagina, pai);
+      restauraArvore(arq, raiz, posicaoChavePagina, p);
+
+      PAGINA* aux = carregarPagina(arq, *raiz);
+      if(aux->cont == 0)
+        *raiz = aux->item[0].linkdir;
     }
-    PAGINA* aux = carregarPagina(arq, *raiz);
-    if(aux->cont == 0)
-      *raiz = aux->item[0].linkdir;
   }
 
 }

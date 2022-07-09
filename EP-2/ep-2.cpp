@@ -73,13 +73,11 @@ PAGINA *carregarPagina(FILE *arq, int nroPag)
 {
   PAGINA *r;
   rewind(arq);
-  while (1 == fread(r, sizeof(PAGINA), 1, arq))
-  {
-    if (r->np == nroPag)
-      return r;
-  }
-
-  return NULL;
+  fseek(arq, nroPag*sizeof(PAGINA), SEEK_SET);
+  if(1 == fread(&r, sizeof(PAGINA), 1, arq))
+    return r;
+  else 
+    return NULL;
 }
 
 PAGINA *carregarPaginaChave(FILE *arq, int chave, int* pos, int raiz)
@@ -119,9 +117,8 @@ void sobeSucessor(int ch, FILE* arq, int raiz)
   }
   
   p->item[pos] = aux->item[1];
-  fseek(arq, p->np*sizeof(PAGINA), SEEK_SET); //verificar com prof se é possível acessar o arquivo dessa maneira
+  fseek(arq, p->np*sizeof(PAGINA), SEEK_SET); 
   fwrite(&p, sizeof(PAGINA), 1, arq);
-  
 }
 
 //Função que restaura a árvore aplicando as regras de underflow, realizando as distribuições necessárias e/ou concatenações.
@@ -196,59 +193,87 @@ void excluir(char nomearq[], int *raiz, int ch)
 int main()
 {
 
+  /* =========================== Página 0 ========================================== */
+  //raiz
   PAGINA p1;
   p1.np = 0;
   p1.cont = 1;
+
   CHLINK c1;
-  c1.chave = 0;
+  c1.chave = -1;
   c1.linkdir = 1;
+
   CHLINK c2;
   c2.chave = 13;
   c2.linkdir = 2;
+
   p1.item[0] = c1;
   p1.item[1] = c2;
+
   CHLINK c27;
   c27.chave = -1;
   c27.linkdir = -1;
   p1.item[2] = c27;
+/* ================================================================================ */
 
+
+
+/* =========================== Página 1 ========================================== */
   PAGINA p2;
   p2.np = 1;
   p2.cont = 2;
+
   CHLINK c3;
-  c3.chave = 0;
+  c3.chave = -1;
   c3.linkdir = 3;
+
   CHLINK c4;
   c4.chave = 4;
   c4.linkdir = 4;
+  
   CHLINK c5;
   c5.chave = 8;
   c5.linkdir = 5;
+
   p2.item[0] = c3;
   p2.item[1] = c4;
   p2.item[2] = c5;
+/* ================================================================================ */
 
+
+
+
+/* =========================== Página 2 ========================================== */
   PAGINA p3;
   p3.np = 2;
   p3.cont = 2;
+
   CHLINK c6;
-  c6.chave = 0;
+  c6.chave = -1;
   c6.linkdir = 6;
+
   CHLINK c7;
   c7.chave = 17;
   c7.linkdir = 7;
+
   CHLINK c8;
   c8.chave = 21;
   c8.linkdir = 8;
+
   p3.item[0] = c6;
   p3.item[1] = c7;
   p3.item[2] = c8;
 
+  /* ================================================================================ */
+
+
+
+/* =========================== Página 3 ========================================== */
   PAGINA p4;
   p4.np = 3;
   p4.cont = 2;
   CHLINK c9;
-  c9.chave = 0;
+  c9.chave = -1;
   c9.linkdir = -1;
   CHLINK c10;
   c10.chave = 1;
@@ -259,12 +284,15 @@ int main()
   p4.item[0] = c9;
   p4.item[1] = c10;
   p4.item[2] = c11;
+  /* ================================================================================ */
 
+
+/* =========================== Página 4 ========================================== */  
   PAGINA p5;
   p5.np = 4;
   p5.cont = 2;
   CHLINK c12;
-  c12.chave = 0;
+  c12.chave = -1;
   c12.linkdir = -1;
   CHLINK c13;
   c13.chave = 5;
@@ -275,12 +303,15 @@ int main()
   p5.item[0] = c12;
   p5.item[1] = c13;
   p5.item[2] = c14;
+  /* ================================================================================ */
 
+
+/* =========================== Página 5 =============================================== */  
   PAGINA p6;
   p6.np = 5;
   p6.cont = 2;
   CHLINK c15;
-  c15.chave = 0;
+  c15.chave = -1;
   c15.linkdir = -1;
   CHLINK c16;
   c16.chave = 9;
@@ -291,12 +322,16 @@ int main()
   p6.item[0] = c15;
   p6.item[1] = c16;
   p6.item[2] = c17;
+/* ==================================================================================== */
 
+
+
+/* =========================== Página 6 =============================================== */  
   PAGINA p7;
   p7.np = 6;
   p7.cont = 2;
   CHLINK c18;
-  c18.chave = 0;
+  c18.chave = -1;
   c18.linkdir = -1;
   CHLINK c19;
   c19.chave = 15;
@@ -307,12 +342,16 @@ int main()
   p7.item[0] = c18;
   p7.item[1] = c19;
   p7.item[2] = c20;
+/* ===================================================================================== */
 
+
+
+/* =========================== Página 7 =============================================== */  
   PAGINA p8;
   p8.np = 7;
   p8.cont = 2;
   CHLINK c21;
-  c21.chave = 0;
+  c21.chave = -1;
   c21.linkdir = -1;
   CHLINK c22;
   c22.chave = 18;
@@ -323,12 +362,15 @@ int main()
   p8.item[0] = c21;
   p8.item[1] = c22;
   p8.item[2] = c23;
+/* ===================================================================================== */
 
+
+/* =========================== Página 8 =============================================== */  
   PAGINA p9;
   p9.np = 8;
   p9.cont = 2;
   CHLINK c24;
-  c24.chave = 0;
+  c24.chave = -1;
   c24.linkdir = -1;
   CHLINK c25;
   c25.chave = 23;
@@ -339,6 +381,7 @@ int main()
   p9.item[0] = c24;
   p9.item[1] = c25;
   p9.item[2] = c26;
+/* ===================================================================================== */
 
   FILE *arq = fopen("arvore-b.bin", "wb+");
   fwrite(&p1, sizeof(PAGINA), 1, arq);

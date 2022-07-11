@@ -132,30 +132,30 @@ void sobeSucessor(int ch, FILE* arq, int raiz, int* chaveSucessor)
 
 //Função que restaura a árvore aplicando as regras de underflow, realizando as distribuições necessárias e/ou concatenações.
 
-void restauraArvore(FILE* arq, int* raiz, int pos, PAGINA* p)
+void restauraArvore(FILE* arq, PAGINA* raiz, PAGINA* p)
 {
   //Caso em que a página com underflow é a mais à esquerda
-  if (pos == 0)
+  if (p->np == raiz->item[0].linkdir)
   {
-    if(carregarPagina(arq, p->item[1].linkdir)->cont > 1)
-      moveParaEsquerda(raiz, 1); //move o irmão 1 para o irmão 0
-    else combinaIrmaos(raiz, 1); // concatenação com a raiz
+    if(carregarPagina(arq, raiz->item[1].linkdir)->cont > 1)
+      moveParaEsquerda(raiz, raiz->item[1].linkdir); //move o irmão 1 para o irmão 0
+    else combinaIrmaos(raiz, raiz->item[1].linkdir); // concatenação com a raiz (combina o irmão a direia + p + raiz)
   } else {
     //verifica se é o mais a direita
-    if (pos == 2)  
+    if (p->np == raiz->item[2].linkdir)  
     {
-      if(carregarPagina(arq, p->item[1].linkdir)->cont > 1)
-        moveParaDireita(raiz, pos); //move do irmao pos-1 para pos
-      else combinaIrmaos(raiz, pos); //concatenação
+      if(carregarPagina(arq, raiz->item[1].linkdir)->cont > 1)
+        moveParaDireita(raiz, raiz->item[1].linkdir); //move do irmao do meio para o da direita
+      else combinaIrmaos(raiz, raiz->item[1].linkdir); //concatenação
     } else 
       {
         //caso em que a pagina está no meio
-        if(carregarPagina(arq, p->item[0].linkdir)->cont > 1)
-          moveParaDireita(raiz, pos);
-        else if (carregarPagina(arq, p->item[2].linkdir)->cont > 1)
-                moveParaEsquerda(raiz, 2);
+        if(carregarPagina(arq, raiz->item[0].linkdir)->cont > 1)
+          moveParaDireita(raiz, raiz->item[0].linkdir);
+        else if (carregarPagina(arq, raiz->item[2].linkdir)->cont > 1)
+                moveParaEsquerda(raiz, raiz->item[2].linkdir);
              else //nenhum dos dois irmaos pode emprestar
-                combinaIrmaos(raiz, pos); // concatenação
+                combinaIrmaos(raiz, raiz->item[1].linkdir); // concatenação. Obs: Estou passando a página do meio, mas isso deve ser verificado na implementação de concatenação, pois é um caso onde as três páginas seriam concatenadas.
       }
   }
     
@@ -212,11 +212,11 @@ void excluir(char nomearq[], int* raiz, int ch)
   {
     if (p->cont < 1)
     {
-      restauraArvore(arq, raiz, posicaoChavePagina, p);
+      PAGINA* raiz = carregarPagina(arq, *raiz);
+      restauraArvore(arq, raiz, p); //Nesse caso a raiz terá um valor diferente para cada recursão. Ela representa a "raiz relativa" dentro da recursão 
 
-      PAGINA* aux = carregarPagina(arq, *raiz);
-      if(aux->cont == 0)
-        *raiz = aux->item[0].linkdir;
+      if(raiz->cont == 0)
+        *raiz = raiz->item[0].linkdir;
     }
   }
 

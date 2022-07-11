@@ -130,6 +130,48 @@ void sobeSucessor(int ch, FILE* arq, int raiz, int* chaveSucessor)
   fwrite(&p, sizeof(PAGINA), 1, arq);
 }
 
+// função de concatenação
+//combina o irmão np e np-1 com a raiz, junto tudo
+void combinaIrmaos(FILE* arq, PAGINA* raiz, int np)
+{
+  //Primeia coisa a ser feita é copiar a chave do separador no final do filho mais à esquerda.
+  int posicaoSeparador;
+  PAGINA* direita;
+  PAGINA* esquerda;
+  for (int i = 1; i <= 2; i++)
+  {
+    if (raiz->item[i].linkdir == np)
+    {
+      posicaoSeparador = i;
+      esquerda = carregarPagina(arq, raiz->item[i-1].linkdir);
+      direita = carregarPagina(arq, np);
+    }
+  }
+
+  esquerda->cont++;
+  esquerda->item[esquerda->cont].chave = raiz->item[posicaoSeparador].chave;
+  esquerda->item[esquerda->cont].linkdir = direita->item[0].linkdir;
+
+  //Copiar as chaves e filhos do nó à direita para o nó à esquerda. Obs: importante ressaltar que as duas páginas irmãs contém 1 ou menos chaves
+    esquerda.cont++;
+    esquerda->item[esquerda->cont].chave = direita->item[1].chave;
+    esquerda->item[esquerda->cont].linkdir = direita->item[1].linkdir;
+
+  //Deslocar as chaves e filhos do pai uma posição para esuqerda (corrigindo o gap deixado pela exclusão).
+  for (int i = posicaoSeparador; i < raiz->cont; i++)
+  {
+    raiz->item[i].chave = raiz->item[i+1].chave;
+    raiz->item[i].linkdir = raiz->item[i+1].chave;
+  }
+
+  raiz->cont--;
+
+  //exclusão da página da direita
+  free(direita);
+  
+  
+}
+
 //Função que restaura a árvore aplicando as regras de underflow, realizando as distribuições necessárias e/ou concatenações.
 
 void restauraArvore(FILE* arq, PAGINA* raiz, PAGINA* p)
@@ -139,14 +181,14 @@ void restauraArvore(FILE* arq, PAGINA* raiz, PAGINA* p)
   {
     if(carregarPagina(arq, raiz->item[1].linkdir)->cont > 1)
       moveParaEsquerda(raiz, raiz->item[1].linkdir); //move o irmão 1 para o irmão 0
-    else combinaIrmaos(raiz, raiz->item[1].linkdir); // concatenação com a raiz (combina o irmão a direia + p + raiz)
+    else combinaIrmaos(arq, raiz, raiz->item[1].linkdir); // concatenação com a raiz (combina o irmão a direia + p + raiz)
   } else {
     //verifica se é o mais a direita
     if (p->np == raiz->item[2].linkdir)  
     {
       if(carregarPagina(arq, raiz->item[1].linkdir)->cont > 1)
         moveParaDireita(raiz, raiz->item[1].linkdir); //move do irmao do meio para o da direita
-      else combinaIrmaos(raiz, raiz->item[1].linkdir); //concatenação
+      else combinaIrmaos(arq, raiz, p->np); //concatenação. Obs: ao invés do p->np poderia ser o próprio raiz->item[2].linkdir, uma vez que se caiu nesse trecho do código é porque são iguais. Entretanto preferi colocar p->np para reforçar que esse método de concatenação pega do irmão mais à direita, nesse caso o próprio p, em relação às duas páginas a serem concatenadas.
     } else 
       {
         //caso em que a pagina está no meio
@@ -155,7 +197,7 @@ void restauraArvore(FILE* arq, PAGINA* raiz, PAGINA* p)
         else if (carregarPagina(arq, raiz->item[2].linkdir)->cont > 1)
                 moveParaEsquerda(raiz, raiz->item[2].linkdir);
              else //nenhum dos dois irmaos pode emprestar
-                combinaIrmaos(raiz, raiz->item[1].linkdir); // concatenação. Obs: Estou passando a página do meio, mas isso deve ser verificado na implementação de concatenação, pois é um caso onde as três páginas seriam concatenadas.
+                combinaIrmaos(arq, raiz, raiz->item[1].linkdir); // concatenação. Obs: Estou passando a página do meio, pois para a concatenação deve ser passado sempre a página mais a direita relativa às duas páginas que serão concatenadas.
       }
   }
     

@@ -130,30 +130,68 @@ void sobeSucessor(int ch, FILE* arq, int raiz, int* chaveSucessor)
   fwrite(&p, sizeof(PAGINA), 1, arq);
 }
 
-//Função que restaura a árvore aplicando as regras de underflow, realizando as distribuições necessárias e/ou concatenações.
 
-void restauraArvore(FILE* arq, int* raiz, int pos, PAGINA* p)
+void moveParaEsquerda(FILE* arq, PAGINA* raiz, int pos)
+{
+  //TODO: escrever alterações em disco
+
+  PAGINA* esquerda = carregarPagina(arq, raiz->item[pos-1].linkdir);
+  PAGINA* direita = carregarPagina(arq, raiz->item[pos].linkdir);
+
+  esquerda->cont++;
+  esquerda->item[esquerda->cont].chave = raiz->item[pos].chave;
+
+  /*
+    Não entendi essa parte:
+    No *irmaoempos = raiz->filhos[pos];
+	  esquerda->filhos[esquerda->cont] = irmaoempos->filhos[0];
+
+    Mas convertendo para o nosso caso seria isso:
+  */
+  esquerda->item[esquerda->cont].linkdir = direita->item[0].linkdir;
+
+
+
+  raiz->item[pos].chave =  direita->item[pos].chave;
+  
+  direita->item[0].linkdir = direita->item[1].linkdir;
+  direita->cont--;
+
+  for (int i = 1; i <= direita->cont; i++)
+  {
+    direita->item[i].chave = direita->item[i].chave;
+    direita->item[i].linkdir = direita->item[i].linkdir;
+  }
+
+}
+
+
+
+
+
+//Função que restaura a árvore aplicando as regras de underflow, realizando as distribuições necessárias e/ou concatenações.
+void restauraArvore(FILE* arq, int* raiz, int pos, PAGINA* pai)
 {
   //Caso em que a página com underflow é a mais à esquerda
   if (pos == 0)
   {
-    if(carregarPagina(arq, p->item[1].linkdir)->cont > 1)
-      moveParaEsquerda(raiz, 1); //move o irmão 1 para o irmão 0
+    if(carregarPagina(arq, pai->item[1].linkdir)->cont > 1)
+      moveParaEsquerda(arq, pai, 1); //move o irmão 1 para o irmão 0
     else combinaIrmaos(raiz, 1); // concatenação com a raiz
   } else {
     //verifica se é o mais a direita
     if (pos == 2)  
     {
-      if(carregarPagina(arq, p->item[1].linkdir)->cont > 1)
+      if(carregarPagina(arq, pai->item[1].linkdir)->cont > 1)
         moveParaDireita(raiz, pos); //move do irmao pos-1 para pos
       else combinaIrmaos(raiz, pos); //concatenação
     } else 
       {
         //caso em que a pagina está no meio
-        if(carregarPagina(arq, p->item[0].linkdir)->cont > 1)
+        if(carregarPagina(arq, pai->item[0].linkdir)->cont > 1)
           moveParaDireita(raiz, pos);
-        else if (carregarPagina(arq, p->item[2].linkdir)->cont > 1)
-                moveParaEsquerda(raiz, 2);
+        else if (carregarPagina(arq, pai->item[2].linkdir)->cont > 1)
+                moveParaEsquerda(arq, pai, 2);
              else //nenhum dos dois irmaos pode emprestar
                 combinaIrmaos(raiz, pos); // concatenação
       }
@@ -214,6 +252,7 @@ void excluir(char nomearq[], int* raiz, int ch)
     {
       restauraArvore(arq, raiz, posicaoChavePagina, p);
 
+      //TODO: Carregar a página pai
       PAGINA* aux = carregarPagina(arq, *raiz);
       if(aux->cont == 0)
         *raiz = aux->item[0].linkdir;

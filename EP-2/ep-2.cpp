@@ -19,7 +19,7 @@ int nroUSP1()
 
 int nroUSP2()
 {
-  return 0;
+  return 12692197;
 }
 
 //-------------------------------------------
@@ -130,7 +130,6 @@ void sobeSucessor(int ch, FILE* arq, int raiz, int* chaveSucessor)
   fwrite(&p, sizeof(PAGINA), 1, arq);
 }
 
-<<<<<<< HEAD
 
 void moveParaEsquerda(FILE* arq, PAGINA* raiz, int pos)
 {
@@ -170,11 +169,6 @@ void moveParaEsquerda(FILE* arq, PAGINA* raiz, int pos)
 
 
 
-//Função que restaura a árvore aplicando as regras de underflow, realizando as distribuições necessárias e/ou concatenações.
-void restauraArvore(FILE* arq, int* raiz, int pos, PAGINA* pai)
-=======
-// função de concatenação
-//combina o irmão np e np-1 com a raiz, junto tudo
 void combinaIrmaos(FILE* arq, PAGINA* raiz, int np)
 {
   //Primeia coisa a ser feita é copiar a chave do separador no final do filho mais à esquerda.
@@ -218,36 +212,17 @@ void combinaIrmaos(FILE* arq, PAGINA* raiz, int np)
 //Função que restaura a árvore aplicando as regras de underflow, realizando as distribuições necessárias e/ou concatenações.
 
 void restauraArvore(FILE* arq, PAGINA* raiz, PAGINA* p)
->>>>>>> df688a0e96782207131ef7a5dec99077ec1bbaac
 {
   //Caso em que a página com underflow é a mais à esquerda
   if (p->np == raiz->item[0].linkdir)
   {
-<<<<<<< HEAD
-    if(carregarPagina(arq, pai->item[1].linkdir)->cont > 1)
-      moveParaEsquerda(arq, pai, 1); //move o irmão 1 para o irmão 0
-    else combinaIrmaos(raiz, 1); // concatenação com a raiz
-=======
     if(carregarPagina(arq, raiz->item[1].linkdir)->cont > 1)
-      moveParaEsquerda(raiz, raiz->item[1].linkdir); //move o irmão 1 para o irmão 0
+      moveParaEsquerda(arq, p, 1); //move o irmão 1 para o irmão 0
     else combinaIrmaos(arq, raiz, raiz->item[1].linkdir); // concatenação com a raiz (combina o irmão a direia + p + raiz)
->>>>>>> df688a0e96782207131ef7a5dec99077ec1bbaac
   } else {
     //verifica se é o mais a direita
     if (p->np == raiz->item[2].linkdir)  
     {
-<<<<<<< HEAD
-      if(carregarPagina(arq, pai->item[1].linkdir)->cont > 1)
-        moveParaDireita(raiz, pos); //move do irmao pos-1 para pos
-      else combinaIrmaos(raiz, pos); //concatenação
-    } else 
-      {
-        //caso em que a pagina está no meio
-        if(carregarPagina(arq, pai->item[0].linkdir)->cont > 1)
-          moveParaDireita(raiz, pos);
-        else if (carregarPagina(arq, pai->item[2].linkdir)->cont > 1)
-                moveParaEsquerda(arq, pai, 2);
-=======
       if(carregarPagina(arq, raiz->item[1].linkdir)->cont > 1)
         moveParaDireita(raiz, raiz->item[1].linkdir); //move do irmao do meio para o da direita
       else combinaIrmaos(arq, raiz, p->np); //concatenação. Obs: ao invés do p->np poderia ser o próprio raiz->item[2].linkdir, uma vez que se caiu nesse trecho do código é porque são iguais. Entretanto preferi colocar p->np para reforçar que esse método de concatenação pega do irmão mais à direita, nesse caso o próprio p, em relação às duas páginas a serem concatenadas.
@@ -257,8 +232,7 @@ void restauraArvore(FILE* arq, PAGINA* raiz, PAGINA* p)
         if(carregarPagina(arq, raiz->item[0].linkdir)->cont > 1)
           moveParaDireita(raiz, raiz->item[0].linkdir);
         else if (carregarPagina(arq, raiz->item[2].linkdir)->cont > 1)
-                moveParaEsquerda(raiz, raiz->item[2].linkdir);
->>>>>>> df688a0e96782207131ef7a5dec99077ec1bbaac
+                moveParaEsquerda(arq, p, 2);
              else //nenhum dos dois irmaos pode emprestar
                 combinaIrmaos(arq, raiz, raiz->item[1].linkdir); // concatenação. Obs: Estou passando a página do meio, pois para a concatenação deve ser passado sempre a página mais a direita relativa às duas páginas que serão concatenadas.
       }
@@ -320,15 +294,8 @@ void excluir(char nomearq[], int* raiz, int ch)
       PAGINA* raiz = carregarPagina(arq, *raiz);
       restauraArvore(arq, raiz, p); //Nesse caso a raiz terá um valor diferente para cada recursão. Ela representa a "raiz relativa" dentro da recursão 
 
-<<<<<<< HEAD
-      //TODO: Carregar a página pai
-      PAGINA* aux = carregarPagina(arq, *raiz);
-      if(aux->cont == 0)
-        *raiz = aux->item[0].linkdir;
-=======
       if(raiz->cont == 0)
         *raiz = raiz->item[0].linkdir;
->>>>>>> df688a0e96782207131ef7a5dec99077ec1bbaac
     }
   }
 

@@ -67,6 +67,8 @@ bool removeChave(FILE* arq, int ch, int raiz)
       p->cont--;
       return true;
   }
+
+  fseek(arq, p->np*sizeof(PAGINA), SEEK_SET);
 }
 
 PAGINA* carregarPagina(FILE *arq, int nroPag)
@@ -81,6 +83,16 @@ PAGINA* carregarPagina(FILE *arq, int nroPag)
     return NULL;
 }
 
+void imprimirArvore(FILE* arq, int raiz)
+{
+  PAGINA* p = carregarPagina(arq, raiz);
+  for (int i = 1; i <= p->cont; i++)
+    printf("%i ", p->item[i].chave);
+
+  for(int i = 0; i <= p->cont; i++)
+    imprimirArvore(arq, p->item[i].linkdir); 
+  
+}
 
 PAGINA* carregarPaginaChave(FILE *arq, int chave, int* pos, int raiz)
 {
@@ -204,9 +216,11 @@ void combinaIrmaos(FILE* arq, PAGINA* raiz, int np)
   raiz->cont--;
 
   //exclusão da página da direita
-  free(direita);
-  
-  
+  free(direita);~
+  fseek(arq, raiz->np*sizeof(PAGINA), SEEK_SET);
+  fwrite(raiz, sizeof(PAGINA), 1, arq);
+  fseek(arq, esquerda->np*sizeof(PAGINA), SEEK_SET);
+  fwrite(esquerda, sizeof(PAGINA), 1, arq);
 }
 
 //Função que restaura a árvore aplicando as regras de underflow, realizando as distribuições necessárias e/ou concatenações.
@@ -306,6 +320,7 @@ int main()
 
   /* =========================== Página 0 ========================================== */
   //raiz
+  int raiz = 0;
   PAGINA p1;
   p1.np = 0;
   p1.cont = 1;
@@ -543,7 +558,154 @@ int main()
   printf("\n\nteste de encontrar o sucessor\n\n");
   printf("%i", encontrarSucessor(21, arq));
 
+//TESTE FUNÇÃO DE EXCLUSÃO
+  /*
+  Arvore inicial:
+  13, 4, 8, 17, 21, 1, 3, 5, 6, 9, 10, 15, 16, 18, 19, 23, 26
+  */
+
+
+  //1.
+  printf("TESTE %i: \n", 1);
+  excluir(arq, &raiz, 3);
+  imprimirArvore(arq, raiz);
+  printf("\n\n");
+  //Resultado Esperado 13,4,8,17,21,1,5,6,9,10,15,16,18,19,23,26
+
+  //2.
+  printf("TESTE %i: \n", 2);
+  excluir(arq, &raiz, 19);
+  imprimirArvore(arq, raiz);
+  printf("\n\n");
+  //Resultado Esperado 13,4,8,17,21,1,5,6,9,10,15,16,18,23,26
+
+  //3.
+  printf("TESTE %i: \n", 3);
+  excluir(arq, &raiz, 4);
+  imprimirArvore(arq, raiz);
+  printf("\n\n");
+  //Resultado Esperado 13,5,8,17,21,1,6,9,1,15,16,18,23,26
+
+  //4. Teste com chave que não existe
+  printf("TESTE %i: \n", 4);
+  excluir(arq, &raiz, 56);
+  imprimirArvore(arq, raiz);
+  printf("\n\n");
+  //Resultado Esperado -1
+
+  //5.
+  printf("TESTE %i: \n", 5);
+  excluir(arq, &raiz, 1);
+  imprimirArvore(arq, raiz); 
+  printf("\n\n");                   
+  //Resultado Esperado 13,8,17,21,5,6,9,10,15,16,18,23,26
+
+  //6. Teste com chave que não existe
+  printf("TESTE %i: \n", 6);
+  excluir(arq, &raiz, -7);
+  imprimirArvore(arq, raiz); 
+  printf("\n\n");                   
+  //Resultado Esperado -1
+
+  //7.
+  printf("TESTE %i: \n", 7);
+  excluir(arq, &raiz, 13);
+  imprimirArvore(arq, raiz); 
+  printf("\n\n");                   
+  //Resultado Esperado 15,8,17,21,5,6,9,10,16,18,23,26
+
+  //8.
+  printf("TESTE %i: \n", 8);
+  excluir(arq, &raiz, 9);
+  imprimirArvore(arq, raiz); 
+  printf("\n\n");                   
+  //Resultado Esperado 15,8,17,21,5,6,10,16,18,23,26
+
+  //9.
+  printf("TESTE %i: \n", 9);
+  excluir(arq, &raiz, 16);
+  imprimirArvore(arq, raiz); 
+  printf("\n\n");                   
+  //Resultado Esperado 15,8,21,5,6,10,17,18,23,26
+
+  //10.
+  printf("TESTE %i: \n", 10);
+  excluir(arq, &raiz, 23);
+  imprimirArvore(arq, raiz); 
+  printf("\n\n");                   
+  //Resultado Esperado 15,8,21,5,6,10,17,8,26
+
+  //11.
+  printf("TESTE %i: \n", 11);
+  excluir(arq, &raiz, 21);
+  imprimirArvore(arq, raiz); 
+  printf("\n\n");                   
+  //Resultado Esperado 15,8,18,5,6,10,17,26
+
+  //12.
+  printf("TESTE %i: \n", 12);
+  excluir(arq, &raiz, 18);
+  imprimirArvore(arq, raiz); 
+  printf("\n\n");                   
+  //Resultado Esperado 15,8,17,26,5,6,10
+
+  //13.
+  printf("TESTE %i: \n", 13);
+  excluir(arq, &raiz, 5);
+  imprimirArvore(arq, raiz);  
+  printf("\n\n");                  
+  //Resultado Esperado 15,8,17,26,6,10
+
+  //14.
+  printf("TESTE %i: \n", 14);
+  excluir(arq, &raiz, 8);
+  imprimirArvore(arq, raiz);  
+  printf("\n\n");                  
+  //Resultado Esperado 15,16,10,17,26
+
+  //15. Chave que não existe 
+  printf("TESTE %i: \n", 15);
+  excluir(arq, &raiz, -1);
+  imprimirArvore(arq, raiz);   
+  printf("\n\n");                 
+  //Resultado Esperado -1
+
+  //16.
+  printf("TESTE %i: \n", 16);
+  excluir(arq, &raiz, 15);
+  imprimirArvore(arq, raiz);  
+  printf("\n\n");                  
+  //Resultado Esperado 17,6,10,26
+
+  //17.
+  printf("TESTE %i: \n", 17);
+  excluir(arq, &raiz, 10);
+  imprimirArvore(arq, raiz);  
+  printf("\n\n");                  
+  //Resultado Esperado 17,6,26
+
+  //18.
+  printf("TESTE %i: \n", 18);
+  excluir(arq, &raiz, 17);
+  imprimirArvore(arq, raiz);  
+  printf("\n\n");                  
+  //Resultado Esperado 6,26
+
+  //19.
+  printf("TESTE %i: \n", 19);
+  excluir(arq, &raiz, 26);
+  imprimirArvore(arq, raiz); 
+  printf("\n\n");                   
+  //Resultado Esperado 6
+
+  //20. Arvore esvaziada
+  printf("TESTE %i: \n", 20);
+  excluir(arq, &raiz, 6);
+  imprimirArvore(arq, raiz);  
+  printf("\n\n");                  
+  //Resultado Esperado -1
   
+
   fclose(arq);
 
   

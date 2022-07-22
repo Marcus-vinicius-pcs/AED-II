@@ -146,7 +146,6 @@ void sobeSucessor(int ch, FILE* arq, int raiz, int* chaveSucessor)
 void moveParaEsquerda(FILE* arq, PAGINA* raiz, int pos)
 {
   //TODO: escrever alterações em disco
-
   PAGINA* esquerda = carregarPagina(arq, raiz->item[pos-1].linkdir);
   PAGINA* direita = carregarPagina(arq, raiz->item[pos].linkdir);
 
@@ -177,7 +176,23 @@ void moveParaEsquerda(FILE* arq, PAGINA* raiz, int pos)
 
 }
 
+void moveParaDireita(FILE* arq, PAGINA* raiz, int pos)
+{
+  PAGINA* direita = carregarPagina(arq, raiz->item[pos].linkdir);
+  PAGINA* esquerda = carregarPagina(arq, raiz->item[pos-1].linkdir);
+  
+  for(int i = direita->cont; i > 0; i--)
+    direita->item[i+1] = direita->item[i+1]; 
+  direita->cont++;
 
+  direita->item[1].linkdir = direita->item[0].linkdir;
+
+  direita->item[1].chave = raiz->item[pos].chave;
+
+  // raiz->chaves[pos] = raiz->filhos[pos-1]->chaves[raiz->filhos[pos-1]->cont];
+  
+  raiz->cont++;
+}
 
 
 
@@ -202,7 +217,7 @@ void combinaIrmaos(FILE* arq, PAGINA* raiz, int np)
   esquerda->item[esquerda->cont].linkdir = direita->item[0].linkdir;
 
   //Copiar as chaves e filhos do nó à direita para o nó à esquerda. Obs: importante ressaltar que as duas páginas irmãs contém 1 ou menos chaves
-    esquerda.cont++;
+    esquerda->cont++;
     esquerda->item[esquerda->cont].chave = direita->item[1].chave;
     esquerda->item[esquerda->cont].linkdir = direita->item[1].linkdir;
 
@@ -238,13 +253,13 @@ void restauraArvore(FILE* arq, PAGINA* raiz, PAGINA* p)
     if (p->np == raiz->item[2].linkdir)  
     {
       if(carregarPagina(arq, raiz->item[1].linkdir)->cont > 1)
-        moveParaDireita(raiz, raiz->item[1].linkdir); //move do irmao do meio para o da direita
+        moveParaDireita(arq, raiz, raiz->item[1].linkdir); //move do irmao do meio para o da direita
       else combinaIrmaos(arq, raiz, p->np); //concatenação. Obs: ao invés do p->np poderia ser o próprio raiz->item[2].linkdir, uma vez que se caiu nesse trecho do código é porque são iguais. Entretanto preferi colocar p->np para reforçar que esse método de concatenação pega do irmão mais à direita, nesse caso o próprio p, em relação às duas páginas a serem concatenadas.
     } else 
       {
         //caso em que a pagina está no meio
         if(carregarPagina(arq, raiz->item[0].linkdir)->cont > 1)
-          moveParaDireita(raiz, raiz->item[0].linkdir);
+          moveParaDireita(arq, raiz, raiz->item[0].linkdir);
         else if (carregarPagina(arq, raiz->item[2].linkdir)->cont > 1)
                 moveParaEsquerda(arq, p, 2);
              else //nenhum dos dois irmaos pode emprestar

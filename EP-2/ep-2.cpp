@@ -48,36 +48,13 @@ void excluir(char nomearq[], int *raiz, int ch);
 // necessitar
 //------------------------------------------
 
-bool removeChave(FILE* arq, int ch, int raiz)
-{
-  int pos = -1;
-  PAGINA* p = carregarPaginaChave(arq, ch, &pos, raiz);
-
-  if (p == NULL || pos == -1)
-    return false;
-
-
-  if(pos == 2){
-    p->cont--;
-    return true;  
-  }
-  else{
-      p->item[pos].chave = p->item[pos+1].chave;
-      p->item[pos].linkdir = p->item[pos+1].linkdir;
-      p->cont--;
-      return true;
-  }
-
-  fseek(arq, p->np*sizeof(PAGINA), SEEK_SET);
-}
-
 PAGINA* carregarPagina(FILE *arq, int nroPag)
 {
-  PAGINA *r;
+  PAGINA *r = (PAGINA*)malloc(sizeof(PAGINA));
   rewind(arq);
   fseek(arq, nroPag*sizeof(PAGINA), SEEK_SET);
 
-  if(1 == fread(&r, sizeof(PAGINA), 1, arq))
+  if(1 == fread(r, sizeof(PAGINA), 1, arq))
     return r;
   else 
     return NULL;
@@ -85,17 +62,31 @@ PAGINA* carregarPagina(FILE *arq, int nroPag)
 
 void imprimirArvore(FILE* arq, int raiz)
 {
-  PAGINA* p = carregarPagina(arq, raiz);
-  for (int i = 1; i <= p->cont; i++)
-    printf("%i ", p->item[i].chave);
+  PAGINA* p = (PAGINA*)malloc(sizeof(PAGINA));
+  rewind(arq);
+  while (1 == fread(p, sizeof(PAGINA), 1, arq))
+  {
+    printf("Página: %i\n\n", p->np);
 
-  for(int i = 0; i <= p->cont; i++)
-    imprimirArvore(arq, p->item[i].linkdir); 
+    for (int i = 0; i <= p->cont; i++)
+    {
+      if (p->item[i].chave != -1)
+        printf("Chave: %i Link da chave %i\n", p->item[i].chave, p->item[i].linkdir);
+    }
+    printf("Links:\n");
+    for (int j = 0; j <= p->cont; j++)
+    {
+      if (p->item[j].linkdir)
+        printf(" %i ", p->item[j].linkdir);
+    }
+    printf("\n\n");
+  } 
   
 }
 
 PAGINA* carregarPaginaChave(FILE *arq, int chave, int* pos, int raiz)
 {
+  rewind(arq);
   PAGINA* p = carregarPagina(arq, raiz);
 
   int i = p->cont;
@@ -117,6 +108,36 @@ PAGINA* carregarPaginaChave(FILE *arq, int chave, int* pos, int raiz)
   }
 
   return NULL;
+}
+
+bool removeChave(FILE* arq, int ch, int raiz)
+{
+  rewind(arq);
+  int pos = -1;
+  PAGINA* p = carregarPaginaChave(arq, ch, &pos, raiz);
+  
+  if (p == NULL || pos == -1)
+    return false;
+
+
+  if(pos == 2){
+    p->cont--;
+    fseek(arq, p->np*sizeof(PAGINA), SEEK_SET);
+    fwrite(p, sizeof(PAGINA), 1, arq);
+    return true;  
+  }
+  else{
+      p->item[pos].chave = p->item[pos+1].chave;
+      p->item[pos].linkdir = p->item[pos+1].linkdir;
+      p->cont--;
+      fseek(arq, p->np*sizeof(PAGINA), SEEK_SET);
+      fwrite(p, sizeof(PAGINA), 1, arq);
+      return true;
+  }
+
+
+  return false;
+  
 }
 
 void sobeSucessor(int ch, FILE* arq, int raiz, int* chaveSucessor)
@@ -143,55 +164,71 @@ void sobeSucessor(int ch, FILE* arq, int raiz, int* chaveSucessor)
 }
 
 
-void moveParaEsquerda(FILE* arq, PAGINA* raiz, int pos)
+void moveParaEsquerda(FILE* arq, PAGINA* raiz, int posicaoRaiz)
 {
   //TODO: escrever alterações em disco
-  PAGINA* esquerda = carregarPagina(arq, raiz->item[pos-1].linkdir);
-  PAGINA* direita = carregarPagina(arq, raiz->item[pos].linkdir);
+  PAGINA* esquerda = carregarPagina(arq, raiz->item[posicaoRaiz-1].linkdir);
+  PAGINA* direita = carregarPagina(arq, raiz->item[posicaoRaiz].linkdir);
 
   esquerda->cont++;
-  esquerda->item[esquerda->cont].chave = raiz->item[pos].chave;
+  esquerda->item[esquerda->cont].chave = raiz->item[posicaoRaiz].chave;
 
-  /*
-    Não entendi essa parte:
-    No *irmaoempos = raiz->filhos[pos];
-	  esquerda->filhos[esquerda->cont] = irmaoempos->filhos[0];
-
-    Mas convertendo para o nosso caso seria isso:
-  */
+  //os filhos da esquerda do primeiro elemento da página direita passa a ser os filhos da esquerda
   esquerda->item[esquerda->cont].linkdir = direita->item[0].linkdir;
 
+  raiz->item[posicaoRaiz].chave =  direita->item[1].chave;
 
-
-  raiz->item[pos].chave =  direita->item[pos].chave;
-  
   direita->item[0].linkdir = direita->item[1].linkdir;
   direita->cont--;
 
   for (int i = 1; i <= direita->cont; i++)
   {
-    direita->item[i].chave = direita->item[i].chave;
-    direita->item[i].linkdir = direita->item[i].linkdir;
+    direita->item[i].chave = direita->item[i + 1].chave;
+    direita->item[i].linkdir = direita->item[i + 1].linkdir;
   }
 
+
+  //reescreve raíz
+  fseek(arq, raiz->np*sizeof(PAGINA), SEEK_SET);
+  fwrite(raiz, sizeof(PAGINA), 1, arq);
+
+  //reescreve esquerda
+  fseek(arq, esquerda->np*sizeof(PAGINA), SEEK_SET);
+  fwrite(esquerda, sizeof(PAGINA), 1, arq);
+
+  //reescreve direita
+  fseek(arq, direita->np*sizeof(PAGINA), SEEK_SET);
+  fwrite(direita, sizeof(PAGINA), 1, arq);
 }
 
-void moveParaDireita(FILE* arq, PAGINA* raiz, int pos)
+void moveParaDireita(FILE* arq, PAGINA* raiz, int posiscaoRaiz)
 {
-  PAGINA* direita = carregarPagina(arq, raiz->item[pos].linkdir);
-  PAGINA* esquerda = carregarPagina(arq, raiz->item[pos-1].linkdir);
-  
+  PAGINA* direita = carregarPagina(arq, raiz->item[posiscaoRaiz].linkdir);
+  PAGINA* esquerda = carregarPagina(arq, raiz->item[posiscaoRaiz-1].linkdir);
+
   for(int i = direita->cont; i > 0; i--)
-    direita->item[i+1] = direita->item[i+1]; 
+    direita->item[i+1] = direita->item[i]; 
   direita->cont++;
 
   direita->item[1].linkdir = direita->item[0].linkdir;
 
-  direita->item[1].chave = raiz->item[pos].chave;
+  direita->item[1].chave = raiz->item[posiscaoRaiz].chave;
 
-  // raiz->chaves[pos] = raiz->filhos[pos-1]->chaves[raiz->filhos[pos-1]->cont];
-  
-  raiz->cont++;
+  raiz->item[posiscaoRaiz].chave = esquerda->item[esquerda->cont].chave;
+  esquerda->cont--;
+
+
+  //reescreve raíz
+  fseek(arq, raiz->np*sizeof(PAGINA), SEEK_SET);
+  fwrite(raiz, sizeof(PAGINA), 1, arq);
+
+  //reescreve esquerda
+  fseek(arq, esquerda->np*sizeof(PAGINA), SEEK_SET);
+  fwrite(esquerda, sizeof(PAGINA), 1, arq);
+
+  //reescreve direita
+  fseek(arq, direita->np*sizeof(PAGINA), SEEK_SET);
+  fwrite(direita, sizeof(PAGINA), 1, arq);
 }
 
 
@@ -231,7 +268,7 @@ void combinaIrmaos(FILE* arq, PAGINA* raiz, int np)
   raiz->cont--;
 
   //exclusão da página da direita
-  free(direita);~
+  free(direita);
   fseek(arq, raiz->np*sizeof(PAGINA), SEEK_SET);
   fwrite(raiz, sizeof(PAGINA), 1, arq);
   fseek(arq, esquerda->np*sizeof(PAGINA), SEEK_SET);
@@ -276,9 +313,16 @@ bool buscarChaveNaPagina(PAGINA pagina, int chave, int* posicao)
     return false;
   }
 
-  for (*posicao = pagina.cont; chave < pagina.item[*posicao].chave && *posicao > 1; (*posicao)--);
+  for(int i = 1; i <= pagina.cont; i++)
+    {
+      if(pagina.item[i].chave == chave){
+        *posicao = i;
+        return true;
+      }
+    }
 
-  return (chave == pagina.item[*posicao].chave);
+
+  return false;
 
 }
 
@@ -288,14 +332,13 @@ bool buscarChaveNaPagina(PAGINA pagina, int chave, int* posicao)
 //Função baseada no icmc
 void excluir(char nomearq[], int* raiz, int ch)
 {
-  if (raiz == NULL || *raiz == -1) return;
+  if (*raiz == -1) return;
 
-  FILE* arq = fopen(nomearq, "wb+");
+  FILE* arq = fopen(nomearq, "r+");
+  rewind(arq);
   int posicaoChavePagina;
   PAGINA* p = carregarPagina(arq,*raiz);
-
-  //se encontrou a chave na página raiz
-
+  
   if (buscarChaveNaPagina(*p,ch,&posicaoChavePagina))
   {
     // se for folha
@@ -311,7 +354,7 @@ void excluir(char nomearq[], int* raiz, int ch)
     }
   }
   else { 
-    excluir(nomearq, &p->np, p->item[posicaoChavePagina].chave);
+    excluir(nomearq, &p->item[posicaoChavePagina].linkdir, ch);
   }      
 
   //Verificações da regra de underflow
@@ -320,14 +363,15 @@ void excluir(char nomearq[], int* raiz, int ch)
   {
     if (p->cont < 1)
     {
-      PAGINA* raiz = carregarPagina(arq, *raiz);
-      restauraArvore(arq, raiz, p); //Nesse caso a raiz terá um valor diferente para cada recursão. Ela representa a "raiz relativa" dentro da recursão 
+      PAGINA* raizp = carregarPagina(arq, *raiz);
+      restauraArvore(arq, raizp, p); //Nesse caso a raiz terá um valor diferente para cada recursão. Ela representa a "raiz relativa" dentro da recursão 
 
-      if(raiz->cont == 0)
-        *raiz = raiz->item[0].linkdir;
+      if(raizp->cont == 0)
+        *raiz = -1;
     }
   }
 
+  fclose(arq);
 }
 
 int main()
@@ -537,191 +581,165 @@ int main()
   PAGINA p;
   rewind(arq);
 
-  while (1 == fread(&p, sizeof(PAGINA), 1, arq))
-  {
-    printf("Página: %i\n\n", p.np);
 
-    for (int i = 0; i < 3; i++)
-    {
-      if (p.item[i].chave != -1)
-        printf("Chave: %i Link da chave %i\n", p.item[i].chave, p.item[i].linkdir);
-    }
-    printf("Links:\n");
-    for (int j = 0; j < 3; j++)
-    {
-      if (p.item[j].linkdir)
-        printf(" %i ", p.item[j].linkdir);
-    }
-    printf("\n\n");
-  }
-
-  printf("TESTE CARREGA PAGINA\n\n");
-  for (int i = 0; i < 9; i++)
-  {
-    PAGINA *teste = carregarPagina(arq, i);
-    printf("%i ", teste->item[1].chave);
-  }
-
-  printf("\n\nNOVO TESTEEE\n\n");
-  for (int i = 0; i < 27; i++)
-  {
-    PAGINA *teste1 = carregarPaginaChave(arq, i);
-    if (teste1 != NULL)
-      printf("%i página: %i\n", i, teste1->np);
-  }
-
-  printf("\n\nteste de encontrar o sucessor\n\n");
-  printf("%i", encontrarSucessor(21, arq));
-
-//TESTE FUNÇÃO DE EXCLUSÃO
-  /*
-  Arvore inicial:
-  13, 4, 8, 17, 21, 1, 3, 5, 6, 9, 10, 15, 16, 18, 19, 23, 26
-  */
-
-
+//   printf("TESTE CARREGA PAGINA\n\n");
+//   for (int i = 0; i < 9; i++)
+//   {
+//     PAGINA *teste = carregarPagina(arq, i);
+//     printf("%i ", teste->item[1].chave);
+//   }
+//   printf("\n\n");
+// //TESTE FUNÇÃO DE EXCLUSÃO
+//   /*
+//   Arvore inicial:
+//   13, 4, 8, 17, 21, 1, 3, 5, 6, 9, 10, 15, 16, 18, 19, 23, 26
+//   */
+//   imprimirArvore(arq, raiz);
+//   rewind(arq);
+ 
+  
   //1.
   printf("TESTE %i: \n", 1);
-  excluir(arq, &raiz, 3);
+  excluir((char*)"arvore-b.bin", &raiz, 3);
   imprimirArvore(arq, raiz);
   printf("\n\n");
   //Resultado Esperado 13,4,8,17,21,1,5,6,9,10,15,16,18,19,23,26
 
   //2.
   printf("TESTE %i: \n", 2);
-  excluir(arq, &raiz, 19);
+  excluir((char*)"arvore-b.bin", &raiz, 19);
   imprimirArvore(arq, raiz);
   printf("\n\n");
   //Resultado Esperado 13,4,8,17,21,1,5,6,9,10,15,16,18,23,26
 
+/*
   //3.
   printf("TESTE %i: \n", 3);
-  excluir(arq, &raiz, 4);
+  excluir("arvore-b.bin", &raiz, 4);
   imprimirArvore(arq, raiz);
   printf("\n\n");
   //Resultado Esperado 13,5,8,17,21,1,6,9,1,15,16,18,23,26
 
   //4. Teste com chave que não existe
   printf("TESTE %i: \n", 4);
-  excluir(arq, &raiz, 56);
+  excluir("arvore-b.bin", &raiz, 56);
   imprimirArvore(arq, raiz);
   printf("\n\n");
   //Resultado Esperado -1
 
   //5.
   printf("TESTE %i: \n", 5);
-  excluir(arq, &raiz, 1);
+  excluir("arvore-b.bin", &raiz, 1);
   imprimirArvore(arq, raiz); 
   printf("\n\n");                   
   //Resultado Esperado 13,8,17,21,5,6,9,10,15,16,18,23,26
 
   //6. Teste com chave que não existe
   printf("TESTE %i: \n", 6);
-  excluir(arq, &raiz, -7);
+  excluir("arvore-b.bin", &raiz, -7);
   imprimirArvore(arq, raiz); 
   printf("\n\n");                   
   //Resultado Esperado -1
 
   //7.
   printf("TESTE %i: \n", 7);
-  excluir(arq, &raiz, 13);
+  excluir("arvore-b.bin", &raiz, 13);
   imprimirArvore(arq, raiz); 
   printf("\n\n");                   
   //Resultado Esperado 15,8,17,21,5,6,9,10,16,18,23,26
 
   //8.
   printf("TESTE %i: \n", 8);
-  excluir(arq, &raiz, 9);
+  excluir("arvore-b.bin", &raiz, 9);
   imprimirArvore(arq, raiz); 
   printf("\n\n");                   
   //Resultado Esperado 15,8,17,21,5,6,10,16,18,23,26
 
   //9.
   printf("TESTE %i: \n", 9);
-  excluir(arq, &raiz, 16);
+  excluir("arvore-b.bin", &raiz, 16);
   imprimirArvore(arq, raiz); 
   printf("\n\n");                   
   //Resultado Esperado 15,8,21,5,6,10,17,18,23,26
 
   //10.
   printf("TESTE %i: \n", 10);
-  excluir(arq, &raiz, 23);
+  excluir("arvore-b.bin", &raiz, 23);
   imprimirArvore(arq, raiz); 
   printf("\n\n");                   
   //Resultado Esperado 15,8,21,5,6,10,17,8,26
 
   //11.
   printf("TESTE %i: \n", 11);
-  excluir(arq, &raiz, 21);
+  excluir("arvore-b.bin", &raiz, 21);
   imprimirArvore(arq, raiz); 
   printf("\n\n");                   
   //Resultado Esperado 15,8,18,5,6,10,17,26
 
   //12.
   printf("TESTE %i: \n", 12);
-  excluir(arq, &raiz, 18);
+  excluir("arvore-b.bin", &raiz, 18);
   imprimirArvore(arq, raiz); 
   printf("\n\n");                   
   //Resultado Esperado 15,8,17,26,5,6,10
 
   //13.
   printf("TESTE %i: \n", 13);
-  excluir(arq, &raiz, 5);
+  excluir("arvore-b.bin", &raiz, 5);
   imprimirArvore(arq, raiz);  
   printf("\n\n");                  
   //Resultado Esperado 15,8,17,26,6,10
 
   //14.
   printf("TESTE %i: \n", 14);
-  excluir(arq, &raiz, 8);
+  excluir("arvore-b.bin", &raiz, 8);
   imprimirArvore(arq, raiz);  
   printf("\n\n");                  
   //Resultado Esperado 15,16,10,17,26
 
   //15. Chave que não existe 
   printf("TESTE %i: \n", 15);
-  excluir(arq, &raiz, -1);
+  excluir("arvore-b.bin", &raiz, -1);
   imprimirArvore(arq, raiz);   
   printf("\n\n");                 
   //Resultado Esperado -1
 
   //16.
   printf("TESTE %i: \n", 16);
-  excluir(arq, &raiz, 15);
+  excluir("arvore-b.bin", &raiz, 15);
   imprimirArvore(arq, raiz);  
   printf("\n\n");                  
   //Resultado Esperado 17,6,10,26
 
   //17.
   printf("TESTE %i: \n", 17);
-  excluir(arq, &raiz, 10);
+  excluir("arvore-b.bin", &raiz, 10);
   imprimirArvore(arq, raiz);  
   printf("\n\n");                  
   //Resultado Esperado 17,6,26
 
   //18.
   printf("TESTE %i: \n", 18);
-  excluir(arq, &raiz, 17);
+  excluir("arvore-b.bin", &raiz, 17);
   imprimirArvore(arq, raiz);  
   printf("\n\n");                  
   //Resultado Esperado 6,26
 
   //19.
   printf("TESTE %i: \n", 19);
-  excluir(arq, &raiz, 26);
+  excluir("arvore-b.bin", &raiz, 26);
   imprimirArvore(arq, raiz); 
   printf("\n\n");                   
   //Resultado Esperado 6
 
   //20. Arvore esvaziada
   printf("TESTE %i: \n", 20);
-  excluir(arq, &raiz, 6);
+  excluir("arvore-b.bin", &raiz, 6);
   imprimirArvore(arq, raiz);  
   printf("\n\n");                  
   //Resultado Esperado -1
-  
+  */
 
   fclose(arq);
 
-  
 }

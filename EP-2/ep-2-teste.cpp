@@ -367,11 +367,7 @@ bool buscarChaveNaPagina(PAGINA pagina, int chave, int *posicao)
 
 
 
-
-
-
-// Função baseada no icmc
-void excluir(char nomearq[], int *raiz, int ch)
+void removeChaveRecursivamente(char nomearq[], int *raiz, int ch)
 {
   if (*raiz == -1 || ch < 0) return;
 
@@ -380,17 +376,16 @@ void excluir(char nomearq[], int *raiz, int ch)
   PAGINA *paginaRaiz = carregarPagina(arq, *raiz);
 
   if (buscarChaveNaPagina(*paginaRaiz, ch, &posicaoChavePagina)){
-    // printf("Encontrei ch: %i\n",ch);
     if (ehFolha(paginaRaiz)){
-      if (!removeChave(arq, paginaRaiz->item[posicaoChavePagina].chave, *raiz)) return;
+      removeChave(arq, paginaRaiz->item[posicaoChavePagina].chave, *raiz);
     }else{
       int chaveSucessor = -1;
       sobeSucessor(arq,*paginaRaiz,posicaoChavePagina, &chaveSucessor);
       paginaRaiz = carregarPagina(arq, *raiz);
-      excluir(nomearq, &paginaRaiz->item[posicaoChavePagina].linkdir, chaveSucessor);
+      removeChaveRecursivamente(nomearq, &paginaRaiz->item[posicaoChavePagina].linkdir, chaveSucessor);
     }
   }else{
-    excluir(nomearq, &paginaRaiz->item[posicaoChavePagina].linkdir, ch);
+    removeChaveRecursivamente(nomearq, &paginaRaiz->item[posicaoChavePagina].linkdir, ch);
   }
 
   // Verificações da regra de underflow
@@ -407,6 +402,26 @@ void excluir(char nomearq[], int *raiz, int ch)
 
   fclose(arq);
 }
+
+
+
+
+
+// Função baseada no icmc
+void excluir(char nomearq[], int *raiz, int ch)
+{
+  removeChaveRecursivamente(nomearq, raiz, ch);
+
+  FILE *arq = fopen(nomearq, "rb+");
+
+  PAGINA* paginaRaiz = carregarPagina(arq,*raiz);
+  if(paginaRaiz->cont == 0)
+    *raiz = paginaRaiz->item[0].linkdir;
+
+  fclose(arq);
+}
+
+
 
 int main()
 {
@@ -703,48 +718,53 @@ int main()
     //12.
     printf("TESTE %i: \n", 12);
     excluir((char *)"arvore-b.bin", &raiz, 18);
-    imprimirArvore(arq, raiz);
+    // imprimirArvore(arq, raiz);
     printf("\n\n");
     //Resultado Esperado 15,8,17,26,5,6,10
 
 
-/*
+
     //13.
     printf("TESTE %i: \n", 13);
     printf("raiz: %i\n", raiz);
     excluir((char *)"arvore-b.bin", &raiz, 5);
-    imprimirArvore(arq, raiz);
+    // imprimirArvore(arq, raiz);
     printf("\n\n");
     //Resultado Esperado 15,8,17,26,6,10
 
 
     //14.
     printf("TESTE %i: \n", 14);
+    printf("raiz: %i\n", raiz);
     excluir((char *)"arvore-b.bin", &raiz, 8);
-    imprimirArvore(arq, raiz);
+    // imprimirArvore(arq, raiz);
     printf("\n\n");
     //Resultado Esperado 15,16,10,17,26
 
+
     //15. Chave que não existe
     printf("TESTE %i: \n", 15);
+    printf("raiz: %i\n", raiz);
     excluir((char *)"arvore-b.bin", &raiz, -1);
-    imprimirArvore(arq, raiz);
+    // imprimirArvore(arq, raiz);
     printf("\n\n");
     //Resultado Esperado -1
+
 
     //16.
     printf("TESTE %i: \n", 16);
     excluir((char *)"arvore-b.bin", &raiz, 15);
-    imprimirArvore(arq, raiz);
+    // imprimirArvore(arq, raiz);
     printf("\n\n");
     //Resultado Esperado 17,6,10,26
 
     //17.
     printf("TESTE %i: \n", 17);
     excluir((char *)"arvore-b.bin", &raiz, 10);
-    imprimirArvore(arq, raiz);
+    // imprimirArvore(arq, raiz);
     printf("\n\n");
     //Resultado Esperado 17,6,26
+
 
     //18.
     printf("TESTE %i: \n", 18);
@@ -753,20 +773,23 @@ int main()
     printf("\n\n");
     //Resultado Esperado 6,26
 
+
     //19.
     printf("TESTE %i: \n", 19);
     excluir((char *)"arvore-b.bin", &raiz, 26);
-    imprimirArvore(arq, raiz);
+    // imprimirArvore(arq, raiz);
     printf("\n\n");
     //Resultado Esperado 6
+
 
     //20. Arvore esvaziada
     printf("TESTE %i: \n", 20);
     excluir((char *)"arvore-b.bin", &raiz, 6);
     imprimirArvore(arq, raiz);
+    printf("raiz: %i",raiz);
     printf("\n\n");
     //Resultado Esperado -1
-    */
+    /**/
 
   fclose(arq);
 }

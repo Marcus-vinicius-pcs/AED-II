@@ -113,12 +113,6 @@ PAGINA *carregarPaginaChave(FILE *arq, int chave, int *pos, int raiz)
   return NULL;
 }
 
-
-bool ehFolha(PAGINA* p)
-{
-  return p->item[0].linkdir == -1 && p->item[1].linkdir == -1 && p->item[2].linkdir == -1;
-}
-
 bool removeChave(FILE *arq, int ch, int raiz)
 {
   rewind(arq);
@@ -148,64 +142,41 @@ bool removeChave(FILE *arq, int ch, int raiz)
   return false;
 }
 
-// void sobeSucessor(int ch, FILE *arq, int raiz, int *chaveSucessor)
-// {
-//   int pos = -1;
-//   PAGINA *p = carregarPaginaChave(arq, ch, &pos, raiz);
-//   PAGINA *filha;
-
-//   if (p == NULL || pos == -1)
-//     return;
-
-//   //carrega primeiro a direita
-//   filha = carregarPagina(arq, p->item[pos].linkdir);
-//   while (filha->item[0].linkdir > -1)
-//   {
-//     filha = carregarPagina(arq, filha->item[0].linkdir);
-//   }
-
-//   *chaveSucessor = filha->item[1].chave;
-
-//   p->item[pos].chave = filha->item[1].chave;
-//   fseek(arq, p->np * sizeof(PAGINA), SEEK_SET);
-//   fwrite(p, sizeof(PAGINA), 1, arq);
-// }
-
-
-
-void sobeSucessor(FILE *arq, PAGINA pagina, int posicaoChavePagina,int *chaveSucessor)
+void sobeSucessor(int ch, FILE *arq, int raiz, int *chaveSucessor)
 {
+  int pos = -1;
+  PAGINA *p = carregarPaginaChave(arq, ch, &pos, raiz);
+  PAGINA *filha;
 
-  //carrega primeiro a direita
-  PAGINA* filha = carregarPagina(arq, pagina.item[posicaoChavePagina].linkdir);
-  while (!ehFolha(filha))
+  if (p == NULL || pos == -1)
+    return;
+
+  filha = carregarPagina(arq, p->item[pos].linkdir);
+  while (filha->item[0].linkdir > -1)
   {
     filha = carregarPagina(arq, filha->item[0].linkdir);
   }
 
   *chaveSucessor = filha->item[1].chave;
 
-  pagina.item[posicaoChavePagina].chave = filha->item[1].chave;
-
-  fseek(arq, pagina.np * sizeof(PAGINA), SEEK_SET);
-  fwrite(&pagina, sizeof(PAGINA), 1, arq);
+  p->item[pos].chave = filha->item[1].chave;
+  fseek(arq, p->np * sizeof(PAGINA), SEEK_SET);
+  fwrite(p, sizeof(PAGINA), 1, arq);
 }
 
-
-
-void moveParaEsquerda(FILE *arq, PAGINA *raiz, int posicaoChavePagina)
+void moveParaEsquerda(FILE *arq, PAGINA *raiz, int posicaoRaiz)
 {
   // TODO: escrever alterações em disco
-  PAGINA *esquerda = carregarPagina(arq, raiz->item[posicaoChavePagina - 1].linkdir);
-  PAGINA *direita = carregarPagina(arq, raiz->item[posicaoChavePagina].linkdir);
+  PAGINA *esquerda = carregarPagina(arq, raiz->item[posicaoRaiz - 1].linkdir);
+  PAGINA *direita = carregarPagina(arq, raiz->item[posicaoRaiz].linkdir);
 
   esquerda->cont++;
-  esquerda->item[esquerda->cont].chave = raiz->item[posicaoChavePagina].chave;
+  esquerda->item[esquerda->cont].chave = raiz->item[posicaoRaiz].chave;
 
   // os filhos da esquerda do primeiro elemento da página direita passa a ser os filhos da esquerda
   esquerda->item[esquerda->cont].linkdir = direita->item[0].linkdir;
 
-  raiz->item[posicaoChavePagina].chave = direita->item[1].chave;
+  raiz->item[posicaoRaiz].chave = direita->item[1].chave;
 
   direita->item[0].linkdir = direita->item[1].linkdir;
   direita->cont--;
@@ -236,14 +207,11 @@ void moveParaDireita(FILE *arq, PAGINA *raiz, int posiscaoRaiz)
   PAGINA *esquerda = carregarPagina(arq, raiz->item[posiscaoRaiz - 1].linkdir);
 
   for (int i = direita->cont; i > 0; i--)
-  {
-    direita->item[i + 1].chave = direita->item[i].chave;
-    direita->item[i + 1].linkdir = direita->item[i].linkdir;
-  }
-    
+    direita->item[i + 1] = direita->item[i];
   direita->cont++;
 
   direita->item[1].linkdir = direita->item[0].linkdir;
+
   direita->item[1].chave = raiz->item[posiscaoRaiz].chave;
 
   raiz->item[posiscaoRaiz].chave = esquerda->item[esquerda->cont].chave;
@@ -262,150 +230,156 @@ void moveParaDireita(FILE *arq, PAGINA *raiz, int posiscaoRaiz)
   fwrite(direita, sizeof(PAGINA), 1, arq);
 }
 
-void combinaIrmaos(FILE *arq, PAGINA *raiz, int posicaoChavePagina)
+void combinaIrmaos(FILE *arq, PAGINA *raiz, int np)
 {
-  printf("vou combinar os filhos de %i\n", raiz->item[posicaoChavePagina].chave);
-
-  PAGINA *direita = carregarPagina(arq,raiz->item[posicaoChavePagina].linkdir);
-  PAGINA *esquerda = carregarPagina(arq,raiz->item[posicaoChavePagina - 1].linkdir);
-
-  esquerda->cont++;
-  esquerda->item[esquerda->cont].chave = raiz->item[posicaoChavePagina].chave;
-  esquerda->item[esquerda->cont].linkdir = direita->item[0].linkdir;
-
-
-  for(int i = 1; i <= direita->cont;i++)
+  // Primeia coisa a ser feita é copiar a chave do separador no final do filho mais à esquerda.
+  int posicaoSeparador;
+  PAGINA *direita;
+  PAGINA *esquerda;
+  for (int i = 1; i <= 2; i++)
   {
-    esquerda->cont++;
-    esquerda->item[esquerda->cont].chave = direita->item[i].chave;
-    esquerda->item[esquerda->cont].linkdir = direita->item[i].linkdir;
+    if (raiz->item[i].linkdir == np)
+    {
+      posicaoSeparador = i;
+      esquerda = carregarPagina(arq, raiz->item[i - 1].linkdir);
+      direita = carregarPagina(arq, np);
+    }
   }
 
-  for(int i = posicaoChavePagina; i < raiz->cont;i++)
+  esquerda->cont++;
+  esquerda->item[esquerda->cont].chave = raiz->item[posicaoSeparador].chave;
+  esquerda->item[esquerda->cont].linkdir = direita->item[0].linkdir;
+
+  // Copiar as chaves e filhos do nó à direita para o nó à esquerda. Obs: importante ressaltar que as duas páginas irmãs contém 1 ou menos chaves
+  esquerda->cont++;
+  esquerda->item[esquerda->cont].chave = direita->item[1].chave;
+  esquerda->item[esquerda->cont].linkdir = direita->item[1].linkdir;
+
+  // Deslocar as chaves e filhos do pai uma posição para esuqerda (corrigindo o gap deixado pela exclusão).
+  for (int i = posicaoSeparador; i < raiz->cont; i++)
   {
-    raiz->item[i].chave = raiz->item[i+1].chave;
-    raiz->item[i].linkdir = raiz->item[i+1].linkdir;
+    raiz->item[i].chave = raiz->item[i + 1].chave;
+    raiz->item[i].linkdir = raiz->item[i + 1].linkdir;
   }
 
   raiz->cont--;
 
-  direita->cont = 0;// exclusão da página da direita
-
+  // exclusão da página da direita
+  direita->cont = 0;
   fseek(arq, direita->np * sizeof(PAGINA), SEEK_SET);
   fwrite(direita, sizeof(PAGINA), 1, arq);
 
-  fseek(arq, esquerda->np * sizeof(PAGINA), SEEK_SET);
-  fwrite(esquerda, sizeof(PAGINA), 1, arq);
-
   fseek(arq, raiz->np * sizeof(PAGINA), SEEK_SET);
   fwrite(raiz, sizeof(PAGINA), 1, arq);
+
+  fseek(arq, esquerda->np * sizeof(PAGINA), SEEK_SET);
+  fwrite(esquerda, sizeof(PAGINA), 1, arq);
 }
 
 // Função que restaura a árvore aplicando as regras de underflow, realizando as distribuições necessárias e/ou concatenações.
 
-void restauraArvore(FILE *arq, PAGINA *raiz, int posicaoChavePagina)
+void restauraArvore(FILE *arq, PAGINA *raiz, PAGINA *p)
 {
   // Caso em que a página com underflow é a mais à esquerda
-  if (posicaoChavePagina == 0){
-    PAGINA* filhoDireita = carregarPagina(arq, raiz->item[1].linkdir); 
-    if (filhoDireita->cont > 1)
-      moveParaEsquerda(arq, raiz, 1); 
-    else combinaIrmaos(arq, raiz, 1);
-  }else{
+  if (p->np == raiz->item[0].linkdir)
+  {
+    if (carregarPagina(arq, raiz->item[1].linkdir)->cont > 1)
+      moveParaEsquerda(arq, p, 1); // move o irmão 1 para o irmão 0
+    else
+      combinaIrmaos(arq, raiz, raiz->item[1].linkdir); // concatenação com a raiz (combina o irmão a direia + p + raiz)
+  }
+  else
+  {
     // verifica se é o mais a direita
-    if (posicaoChavePagina == raiz->cont)
+    if (p->np == raiz->item[raiz->cont].linkdir)
     {
-      if (carregarPagina(arq, raiz->item[posicaoChavePagina - 1].linkdir)->cont > 1) //se o da esquerda consegue emprestar
-        moveParaDireita(arq, raiz, posicaoChavePagina); // move do irmao do meio para o da direita
+      if (carregarPagina(arq, raiz->item[raiz->cont - 1].linkdir)->cont > 1) //se o da esquerda consegue emprestar
+        moveParaDireita(arq, raiz, raiz->item[1].linkdir); // move do irmao do meio para o da direita
       else
-        combinaIrmaos(arq, raiz, posicaoChavePagina); // concatenação. Obs: ao invés do p->np poderia ser o próprio raiz->item[2].linkdir, uma vez que se caiu nesse trecho do código é porque são iguais. Entretanto preferi colocar p->np para reforçar que esse método de concatenação pega do irmão mais à direita, nesse caso o próprio p, em relação às duas páginas a serem concatenadas.
+        combinaIrmaos(arq, raiz, p->np); // concatenação. Obs: ao invés do p->np poderia ser o próprio raiz->item[2].linkdir, uma vez que se caiu nesse trecho do código é porque são iguais. Entretanto preferi colocar p->np para reforçar que esse método de concatenação pega do irmão mais à direita, nesse caso o próprio p, em relação às duas páginas a serem concatenadas.
     }
     else
     {
       // caso em que a pagina está no meio
-      if (carregarPagina(arq, raiz->item[posicaoChavePagina - 1].linkdir)->cont > 1)
-        moveParaDireita(arq, raiz, posicaoChavePagina);
-      else if (carregarPagina(arq, raiz->item[posicaoChavePagina + 1].linkdir)->cont > 1)
-        moveParaEsquerda(arq, raiz, posicaoChavePagina + 1);
+      if (carregarPagina(arq, raiz->item[0].linkdir)->cont > 1)
+        moveParaDireita(arq, raiz, raiz->item[0].linkdir);
+      else if (carregarPagina(arq, raiz->item[2].linkdir)->cont > 1)
+        moveParaEsquerda(arq, p, 2);
       else                                               // nenhum dos dois irmaos pode emprestar
-        combinaIrmaos(arq, raiz, posicaoChavePagina); // concatenação. Obs: Estou passando a página do meio, pois para a concatenação deve ser passado sempre a página mais a direita relativa às duas páginas que serão concatenadas.
+        combinaIrmaos(arq, raiz, raiz->item[1].linkdir); // concatenação. Obs: Estou passando a página do meio, pois para a concatenação deve ser passado sempre a página mais a direita relativa às duas páginas que serão concatenadas.
     }
   }
 }
 
-
-
 bool buscarChaveNaPagina(PAGINA pagina, int chave, int *posicao)
 {
-  for(int i = pagina.cont; i >= 1; i--)
+  if (chave < pagina.item[1].chave)
+  {
+    *posicao = 0;
+    return false;
+  }
+
+  for (int i = 1; i <= pagina.cont; i++)
   {
     if (pagina.item[i].chave == chave)
     {
       *posicao = i;
       return true;
     }
-    else
-    {
-      if(pagina.item[i].chave < chave)
-      {
-        *posicao = i;
-        return false;
-      }
-    }
   }
-  
-  *posicao = 0;
+
   return false;
 }
-
-
-
-
-
 
 // Função baseada no icmc
 void excluir(char nomearq[], int *raiz, int ch)
 {
-  if (*raiz == -1 || ch < 0) return;
-  
+  if (*raiz == -1 || ch < 0)
+    return;
+  PAGINA *pai;
   FILE *arq = fopen(nomearq, "rb+");
-
+  rewind(arq);
   int posicaoChavePagina;
-  PAGINA *paginaRaiz = carregarPagina(arq, *raiz);
+  PAGINA *p = carregarPagina(arq, *raiz);
 
-  if (buscarChaveNaPagina(*paginaRaiz, ch, &posicaoChavePagina)){
-    // printf("Encontrei ch: %i\n",ch);
-    if (ehFolha(paginaRaiz)){
-      if (!removeChave(arq, paginaRaiz->item[posicaoChavePagina].chave, *raiz)) return;
-    }else{
-      int chaveSucessor = -1;
-      sobeSucessor(arq,*paginaRaiz,posicaoChavePagina, &chaveSucessor);
-      paginaRaiz = carregarPagina(arq, *raiz);
-      excluir(nomearq, &paginaRaiz->item[posicaoChavePagina].linkdir, chaveSucessor);
+  if (buscarChaveNaPagina(*p, ch, &posicaoChavePagina))
+  {
+    // se for folha
+    if (p->item[0].linkdir == -1 && p->item[1].linkdir == -1 && p->item[2].linkdir == -1)
+    {
+      if (!removeChave(arq, p->item[posicaoChavePagina].chave, *raiz))
+        return;
     }
-  }else{
-    excluir(nomearq, &paginaRaiz->item[posicaoChavePagina].linkdir, ch);
+    else
+    {
+      int chaveSucessor = -1;
+      sobeSucessor(ch, arq, *raiz, &chaveSucessor);
+      pai = p;
+      excluir(nomearq, &p->item[posicaoChavePagina].linkdir, chaveSucessor);
+    }
+  }
+  else
+  {
+    int i;
+    for (i = p->cont; ch < p->item[i].chave; i--);
+    pai = p;
+    excluir(nomearq, &p->item[i].linkdir, ch);
   }
 
   // Verificações da regra de underflow
   // Na volta da recursão vamos corrigindo os "problemas" deixados para trás
-  
-  PAGINA* filhosDireita = carregarPagina(arq, paginaRaiz->item[posicaoChavePagina].linkdir);
-
-  if (filhosDireita)
+  p = carregarPagina(arq, *raiz);
+  if (p != NULL)
   {
-    if (filhosDireita->cont < 1)
+    if (p->cont < 1)
     {
-      restauraArvore(arq, paginaRaiz, posicaoChavePagina); // Nesse caso a raiz terá um valor diferente para cada recursão. Ela representa a "raiz relativa" dentro da recursão
 
-      if (paginaRaiz->cont == 0)
-        *raiz = filhosDireita->np;
-      // if(paginaRaiz->cont != 0)
-      //   *raiz = paginaRaiz->np;
+      restauraArvore(arq, pai, p); // Nesse caso a raiz terá um valor diferente para cada recursão. Ela representa a "raiz relativa" dentro da recursão
+
+      if (carregarPagina(arq, 0)->cont == 0)
+        *raiz = -1;
     }
   }
-
-  
 
   fclose(arq);
 }
@@ -615,7 +589,6 @@ int main()
   // Resultado Esperado 13,4,8,17,21,1,5,6,9,10,15,16,18,19,23,26
 
 
-
   // 2. REMOVE 19
   printf("TESTE %i: \n", 2);
   excluir((char *)"arvore-b.bin", &raiz, 19);
@@ -627,10 +600,9 @@ int main()
   // 3. REMOVE 4
   printf("TESTE %i: \n", 3);
   excluir((char *)"arvore-b.bin", &raiz, 4);
-  //imprimirArvore(arq, raiz);
+  // imprimirArvore(arq, raiz);
   printf("\n\n");
   // Resultado Esperado 13,5,8,17,21,1,6,9,10,15,16,18,23,26
-
 
 
   // 4. Teste com chave que não existe
@@ -641,11 +613,10 @@ int main()
   // Resultado Esperado 13,5,8,17,21,1,6,9,10,15,16,18,23,26
 
 
-
   // 5. REMOVE 1
   printf("TESTE %i: \n", 5);
   excluir((char *)"arvore-b.bin", &raiz, 1);
-  //imprimirArvore(arq, raiz);
+  // imprimirArvore(arq, raiz);
   printf("\n\n");
   // Resultado Esperado 13,8,17,21,5,6,9,10,15,16,18,23,26
 
@@ -658,7 +629,6 @@ int main()
   // Resultado Esperado 13,8,17,21,5,6,9,10,15,16,18,23,26
 
 
-
   // 7. REMOVE 13 -> 15 deve ir para raiz
   printf("TESTE %i: \n", 7);
   excluir((char *)"arvore-b.bin", &raiz, 13);
@@ -667,15 +637,12 @@ int main()
   // Resultado Esperado 15,8,17,21,5,6,9,10,16,18,23,26
 
 
-
     //8.
     printf("TESTE %i: \n", 8);
     excluir((char *)"arvore-b.bin", &raiz, 9);
-    //imprimirArvore(arq, raiz);
+    // imprimirArvore(arq, raiz);
     printf("\n\n");
     //Resultado Esperado 15,8,17,21,5,6,10,16,18,23,26
-
-
 
     //9.
     printf("TESTE %i: \n", 9);
@@ -696,12 +663,11 @@ int main()
     //11.
     printf("TESTE %i: \n", 11);
     excluir((char *)"arvore-b.bin", &raiz, 21);
-    imprimirArvore(arq, raiz);
+    // imprimirArvore(arq, raiz);
     printf("\n\n");
     //Resultado Esperado 15,8,18,5,6,10,17,26
 
-
-
+/*
     //12.
     printf("TESTE %i: \n", 12);
     excluir((char *)"arvore-b.bin", &raiz, 18);
@@ -709,14 +675,12 @@ int main()
     printf("\n\n");
     //Resultado Esperado 15,8,17,26,5,6,10
 
-/*
     //13.
     printf("TESTE %i: \n", 13);
     excluir((char *)"arvore-b.bin", &raiz, 5);
     imprimirArvore(arq, raiz);
     printf("\n\n");
     //Resultado Esperado 15,8,17,26,6,10
-
 
     //14.
     printf("TESTE %i: \n", 14);

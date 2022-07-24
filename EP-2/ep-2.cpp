@@ -264,13 +264,18 @@ void moveParaDireita(FILE *arq, PAGINA *raiz, int posiscaoRaiz)
 
 void combinaIrmaos(FILE *arq, PAGINA *raiz, int posicaoChavePagina)
 {
-  printf("vou combinar os filhos de %i\n", raiz->item[posicaoChavePagina].chave);
+  // printf("chave pai: %i\n", raiz->item[posicaoChavePagina].chave);
 
   PAGINA *direita = carregarPagina(arq,raiz->item[posicaoChavePagina].linkdir);
+  // printf("np direita: %i\n", direita->np);
   PAGINA *esquerda = carregarPagina(arq,raiz->item[posicaoChavePagina - 1].linkdir);
+  // printf("np esquerda: %i\n", esquerda->np);
+
+  // printf("nº da página da direita: %i\n", direita->np);
 
   esquerda->cont++;
   esquerda->item[esquerda->cont].chave = raiz->item[posicaoChavePagina].chave;
+  // printf("primeiro link da direita: %i\n", direita->item[0].linkdir);
   esquerda->item[esquerda->cont].linkdir = direita->item[0].linkdir;
 
 
@@ -288,6 +293,8 @@ void combinaIrmaos(FILE *arq, PAGINA *raiz, int posicaoChavePagina)
   }
 
   raiz->cont--;
+
+  // printf("primeiro link da raiz depois: %i\n", raiz->item[0].linkdir);
 
   direita->cont = 0;// exclusão da página da direita
 
@@ -396,12 +403,9 @@ void excluir(char nomearq[], int *raiz, int ch)
   {
     if (filhosDireita->cont < 1)
     {
-      restauraArvore(arq, paginaRaiz, posicaoChavePagina); // Nesse caso a raiz terá um valor diferente para cada recursão. Ela representa a "raiz relativa" dentro da recursão
+      restauraArvore(arq, paginaRaiz, posicaoChavePagina);
 
-      if (paginaRaiz->cont == 0)
-        *raiz = filhosDireita->np;
-      // if(paginaRaiz->cont != 0)
-      //   *raiz = paginaRaiz->np;
+
     }
   }
 
